@@ -135,7 +135,7 @@ const ProductPage = () => {
     if (!selectedVariant) return;
     addItem(selectedVariant.id, quantity);
     const drawerCheckbox = document.getElementById(
-      "my-drawer-4"
+      "cart-drawer"
     ) as HTMLInputElement | null;
     if (drawerCheckbox) {
       drawerCheckbox.checked = true;
