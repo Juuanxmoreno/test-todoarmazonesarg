@@ -1,0 +1,144 @@
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import type {
+  CreateOrderPayload,
+  Order,
+  OrdersResponse,
+} from "@/interfaces/order";
+import { RootState } from "../store";
+import axiosInstance from "@/utils/axiosInstance";
+import { authRequiredRequest } from "@/utils/authRequiredRequest";
+import { getErrorMessage, type ApiResponse } from "@/types/api";
+import { OrderStatus } from "@/enums/order.enum";
+
+// Thunk para crear una orden
+export const createOrder = createAsyncThunk<
+  Order,
+  CreateOrderPayload,
+  { rejectValue: string }
+>("orders/createOrder", async (payload, thunkAPI) => {
+  try {
+    const res = await axiosInstance.post<ApiResponse<Order>>(
+      "/orders",
+      payload
+    );
+    if (res.data.status === "success" && res.data.data) {
+      return res.data.data;
+    } else {
+      throw new Error(res.data.message || "Error al crear la orden.");
+    }
+  } catch (error: unknown) {
+    return thunkAPI.rejectWithValue(getErrorMessage(error));
+  }
+});
+
+// Thunk para obtener todas las órdenes con paginación y filtro
+export const fetchOrders = createAsyncThunk<
+  OrdersResponse,
+  { status?: OrderStatus; cursor?: string; limit?: number } | undefined,
+  { rejectValue: string }
+>("orders/fetchOrders", async (params, thunkAPI) => {
+  try {
+    let url = "/orders";
+    const query: string[] = [];
+    if (params?.status) query.push(`status=${params.status}`);
+    if (params?.cursor) query.push(`cursor=${params.cursor}`);
+    if (params?.limit) query.push(`limit=${params.limit}`);
+    if (query.length) url += `?${query.join("&")}`;
+    const res = await authRequiredRequest<ApiResponse<OrdersResponse>>({
+      method: "GET",
+      url,
+    });
+    if (res.status === "success" && res.data) {
+      return res.data;
+    } else {
+      throw new Error(res.message || "Error al obtener las órdenes.");
+    }
+  } catch (error: unknown) {
+    return thunkAPI.rejectWithValue(getErrorMessage(error));
+  }
+});
+
+interface OrdersState {
+  orders: Order[];
+  nextCursor: string | null;
+  loading: boolean;
+  error: string | null;
+  statusFilter?: OrderStatus;
+}
+
+const initialState: OrdersState = {
+  orders: [],
+  nextCursor: null,
+  loading: false,
+  error: null,
+  statusFilter: undefined,
+};
+
+const orderSlice = createSlice({
+  name: "orders",
+  initialState,
+  reducers: {
+    clearOrderError(state) {
+      state.error = null;
+    },
+    setStatusFilter(state, action: PayloadAction<OrderStatus | undefined>) {
+      state.statusFilter = action.payload;
+    },
+    resetOrders(state) {
+      state.orders = [];
+      state.nextCursor = null;
+      state.error = null;
+      state.loading = false;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // createOrder
+      .addCase(createOrder.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createOrder.fulfilled, (state, action: PayloadAction<Order>) => {
+        state.loading = false;
+        state.orders.unshift(action.payload);
+      })
+      .addCase(createOrder.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "No se pudo crear la orden.";
+      })
+
+      // fetchOrders
+      .addCase(fetchOrders.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchOrders.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        // Si es paginación, concatenar; si no, reemplazar
+        if (action.meta.arg?.cursor) {
+          state.orders = [...state.orders, ...action.payload.orders];
+        } else {
+          state.orders = action.payload.orders;
+        }
+        state.nextCursor = action.payload.nextCursor;
+      })
+      .addCase(fetchOrders.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "No se pudieron obtener las órdenes.";
+      });
+  },
+});
+
+export const { clearOrderError, setStatusFilter, resetOrders } =
+  orderSlice.actions;
+
+export const selectOrders = (state: RootState) => state.orders.orders;
+export const selectOrdersLoading = (state: RootState) => state.orders.loading;
+export const selectOrdersError = (state: RootState) => state.orders.error;
+export const selectOrdersNextCursor = (state: RootState) =>
+  state.orders.nextCursor;
+export const selectOrdersStatusFilter = (state: RootState) =>
+  state.orders.statusFilter;
+
+export default orderSlice.reducer;
