@@ -72,7 +72,7 @@ const ProductCard = ({
           {category.map((cat, idx) => (
             <Link
               key={cat.slug}
-              href={`/categoria/${encodeURIComponent(cat.slug)}`}
+              href={`/categorias/${encodeURIComponent(cat.slug)}`}
               className="hover:underline"
             >
               {cat.name}

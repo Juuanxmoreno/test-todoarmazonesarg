@@ -166,14 +166,17 @@ const ProductPage = () => {
                 </span>
               ))}
             </li>
-            <li>
-              <Link
-                href={`/categorias/${productDetail.subcategory.slug}`}
-                className="underline-animate no-underline"
-              >
-                {productDetail.subcategory.name}
-              </Link>
-            </li>
+            {productDetail.category.map((cat) => (
+              <li key={`subcat-${cat.slug}`}>
+                <Link
+                  href={`/categorias/${cat.slug}/${productDetail.subcategory.slug}`}
+                  className="underline-animate no-underline"
+                >
+                  {productDetail.subcategory.name}
+                  {productDetail.category.length > 1 && ` (en ${cat.name})`}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
