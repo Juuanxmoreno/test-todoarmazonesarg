@@ -371,7 +371,7 @@ const CheckoutPage = () => {
                         className="font-semibold"
                         style={{ color: "#222222" }}
                       >
-                        {variant?.product.productModel}
+                        {variant?.product.productModel} {variant?.product.sku}
                       </div>
                       <div className="text-sm" style={{ color: "#222222" }}>
                         Color: {variant?.color.name}
