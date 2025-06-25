@@ -351,7 +351,26 @@ const ProductPage = () => {
             <p className="font-normal text-sm text-[#222222]">
               Subcategoria:{" "}
               <span className="text-[#888888]">
-                {productDetail.subcategory.name}
+                {productDetail.category.length === 1 ? (
+                  <Link
+                    href={`/categorias/${productDetail.category[0].slug}/${productDetail.subcategory.slug}`}
+                    className="hover:underline"
+                  >
+                    {productDetail.subcategory.name}
+                  </Link>
+                ) : (
+                  productDetail.category.map((cat, idx, arr) => (
+                    <span key={cat.slug}>
+                      <Link
+                        href={`/categorias/${cat.slug}/${productDetail.subcategory.slug}`}
+                        className="hover:underline"
+                      >
+                        {productDetail.subcategory.name} (en {cat.name})
+                      </Link>
+                      {idx < arr.length - 1 && ", "}
+                    </span>
+                  ))
+                )}
               </span>
             </p>
           </div>
