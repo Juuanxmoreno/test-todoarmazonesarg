@@ -1,4 +1,4 @@
-import { isApiError, ApiResponse } from "@/types/api";
+import { ApiResponse } from "@/types/api";
 import { CurrentUserResponse } from "@/interfaces/auth";
 import { authEvents } from "@/utils/eventBus";
 import axiosInstance from "./axiosInstance";
@@ -27,10 +27,6 @@ export async function authRequiredRequest<T = unknown>(
     const response: AxiosResponse<T> = await axiosInstance.request<T>(config);
     return response.data;
   } catch (error: unknown) {
-    // Si hay error de conexión u otro error, también dispara el evento
-    if (isApiError(error) || error instanceof Error) {
-      authEvents.openAccountDrawer();
-    }
     throw error;
   }
 }
