@@ -16,7 +16,7 @@ import { Check, Package, ShoppingBag } from "lucide-react";
 import LoadingSpinner from "@/components/atoms/LoadingSpinner";
 
 const CheckoutPage = () => {
-  const { cart, loading: cartLoading, fetchCart } = useCart();
+  const { cart, loading, fetchCart } = useCart();
   const { placeOrder, loading: orderLoading, error, resetError } = useOrders();
 
   const [shippingMethod, setShippingMethod] = useState(
@@ -65,7 +65,7 @@ const CheckoutPage = () => {
       : 0;
 
   // Check if cart is loading or empty
-  const isCartFetching = cartLoading.fetch;
+  const isCartFetching = loading.getCart;
   const isCartEmpty = !cart?.items?.length;
   const isOrderInProgress = orderLoading;
 

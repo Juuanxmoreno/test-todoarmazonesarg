@@ -1,267 +1,291 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import type {
+import {
   Cart,
   AddItemToCartPayload,
   UpdateCartItemPayload,
 } from "@/interfaces/cart";
-import type { ApiResponse } from "@/types/api";
-import { authRequiredCartRequest } from "@/utils/authRequiredRequest";
-import { getErrorMessage } from "@/types/api";
-import { RootState } from "../store";
+import { ApiResponse, getErrorMessage } from "@/types/api";
+import { authRequiredRequest } from "@/utils/authRequiredRequest";
+import { IUser } from "@/interfaces/user";
 
+// Estado del slice
 interface CartState {
   cart: Cart | null;
+  // Estados de loading individuales
   loading: {
-    fetch: boolean;
-    addItem: boolean;
-    increment: boolean;
-    decrement: boolean;
-    removeItem: boolean;
+    getCart: boolean;
+    addItem: { [productVariantId: string]: boolean };
+    incrementItem: { [productVariantId: string]: boolean };
+    decrementItem: { [productVariantId: string]: boolean };
+    removeItem: { [productVariantId: string]: boolean };
   };
-  error: string | null;
+  // Estados de error individuales
+  error: {
+    getCart: string | null;
+    addItem: { [productVariantId: string]: string | null };
+    incrementItem: { [productVariantId: string]: string | null };
+    decrementItem: { [productVariantId: string]: string | null };
+    removeItem: { [productVariantId: string]: string | null };
+  };
 }
 
+// Estado inicial
 const initialState: CartState = {
   cart: null,
   loading: {
-    fetch: false,
-    addItem: false,
-    increment: false,
-    decrement: false,
-    removeItem: false,
+    getCart: false,
+    addItem: {},
+    incrementItem: {},
+    decrementItem: {},
+    removeItem: {},
   },
-  error: null,
+  error: {
+    getCart: null,
+    addItem: {},
+    incrementItem: {},
+    decrementItem: {},
+    removeItem: {},
+  },
 };
 
-// 🔄 Obtener carrito actual
-export const fetchCart = createAsyncThunk<
-  Cart,
-  void,
-  { rejectValue: string }
->("cart/fetchCart", async (_, thunkAPI) => {
-  try {
-    const response = await authRequiredCartRequest<ApiResponse<Cart>>({
-      method: "GET",
-      url: "/cart",
-    });
-    if (response.status === "success" && response.data) {
-      return response.data;
-    } else {
-      throw new Error(response.message || "Error al obtener el carrito");
-    }
-  } catch (error: unknown) {
-    return thunkAPI.rejectWithValue(getErrorMessage(error));
-  }
-});
-
-// ➕ Agregar ítem al carrito
-export const addItemToCart = createAsyncThunk<
-  Cart,
-  AddItemToCartPayload,
-  { rejectValue: string }
->(
-  "cart/addItem",
-  async (payload, thunkAPI) => {
+// Async thunks
+export const getCart = createAsyncThunk(
+  "cart/getCart",
+  async (_, thunkAPI) => {
     try {
-      const response = await authRequiredCartRequest<ApiResponse<Cart>>({
-        method: "POST",
-        url: "/cart/add-item",
-        data: payload,
-      });
-      if (response.status === "success" && response.data) {
-        return response.data;
-      } else {
-        throw new Error(response.message || "Error al agregar ítem al carrito");
-      }
+      const state = thunkAPI.getState() as { auth: { user: IUser | null } };
+      const user = state.auth.user;
+      const response = await authRequiredRequest<ApiResponse<Cart>>(
+        {
+          method: "GET",
+          url: "/cart",
+        },
+        user
+      );
+      return response.data!;
     } catch (error: unknown) {
       return thunkAPI.rejectWithValue(getErrorMessage(error));
     }
   }
 );
 
-// ⬆️ Incrementar cantidad
-export const incrementItem = createAsyncThunk<
-  Cart,
-  UpdateCartItemPayload,
-  { rejectValue: string }
->(
-  "cart/incrementItem",
-  async (payload, thunkAPI) => {
+export const addItemToCart = createAsyncThunk(
+  "cart/addItemToCart",
+  async (payload: AddItemToCartPayload, thunkAPI) => {
     try {
-      const response = await authRequiredCartRequest<ApiResponse<Cart>>({
-        method: "PATCH",
-        url: "/cart/increment-item",
-        data: payload,
-      });
-      if (response.status === "success" && response.data) {
-        return response.data;
-      } else {
-        throw new Error(response.message || "Error al incrementar cantidad");
-      }
+      const state = thunkAPI.getState() as { auth: { user: IUser | null } };
+      const user = state.auth.user;
+      const response = await authRequiredRequest<ApiResponse<Cart>>(
+        {
+          method: "POST",
+          url: "/cart/add-item",
+          data: payload,
+        },
+        user
+      );
+      return response.data!;
     } catch (error: unknown) {
       return thunkAPI.rejectWithValue(getErrorMessage(error));
     }
   }
 );
 
-// ⬇️ Decrementar cantidad
-export const decrementItem = createAsyncThunk<
-  Cart,
-  UpdateCartItemPayload,
-  { rejectValue: string }
->(
-  "cart/decrementItem",
-  async (payload, thunkAPI) => {
+export const incrementItemInCart = createAsyncThunk(
+  "cart/incrementItemInCart",
+  async (payload: UpdateCartItemPayload, thunkAPI) => {
     try {
-      const response = await authRequiredCartRequest<ApiResponse<Cart>>({
-        method: "PATCH",
-        url: "/cart/decrement-item",
-        data: payload,
-      });
-      if (response.status === "success" && response.data) {
-        return response.data;
-      } else {
-        throw new Error(response.message || "Error al decrementar cantidad");
-      }
+      const state = thunkAPI.getState() as { auth: { user: IUser | null } };
+      const user = state.auth.user;
+      const response = await authRequiredRequest<ApiResponse<Cart>>(
+        {
+          method: "PATCH",
+          url: "/cart/increment-item",
+          data: payload,
+        },
+        user
+      );
+      return response.data!;
     } catch (error: unknown) {
       return thunkAPI.rejectWithValue(getErrorMessage(error));
     }
   }
 );
 
-// ❌ Eliminar ítem del carrito
-export const removeItem = createAsyncThunk<
-  Cart,
-  UpdateCartItemPayload,
-  { rejectValue: string }
->(
-  "cart/removeItem",
-  async (payload, thunkAPI) => {
+export const decrementItemInCart = createAsyncThunk(
+  "cart/decrementItemInCart",
+  async (payload: UpdateCartItemPayload, thunkAPI) => {
     try {
-      const response = await authRequiredCartRequest<ApiResponse<Cart>>({
-        method: "POST",
-        url: "/cart/remove-item",
-        data: payload,
-      });
-      if (response.status === "success" && response.data) {
-        return response.data;
-      } else {
-        throw new Error(response.message || "Error al eliminar ítem del carrito");
-      }
+      const state = thunkAPI.getState() as { auth: { user: IUser | null } };
+      const user = state.auth.user;
+      const response = await authRequiredRequest<ApiResponse<Cart>>(
+        {
+          method: "PATCH",
+          url: "/cart/decrement-item",
+          data: payload,
+        },
+        user
+      );
+      return response.data!;
     } catch (error: unknown) {
       return thunkAPI.rejectWithValue(getErrorMessage(error));
     }
   }
 );
 
+export const removeItemFromCart = createAsyncThunk(
+  "cart/removeItemFromCart",
+  async (payload: UpdateCartItemPayload, thunkAPI) => {
+    try {
+      const state = thunkAPI.getState() as { auth: { user: IUser | null } };
+      const user = state.auth.user;
+      const response = await authRequiredRequest<ApiResponse<Cart>>(
+        {
+          method: "POST",
+          url: "/cart/remove-item",
+          data: payload,
+        },
+        user
+      );
+      return response.data!;
+    } catch (error: unknown) {
+      return thunkAPI.rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+// Slice
 const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
-    clearCartState: (state) => {
-      state.cart = null;
-      state.error = null;
-      state.loading = {
-        fetch: false,
-        addItem: false,
-        increment: false,
-        decrement: false,
-        removeItem: false,
+    // Limpiar errores específicos
+    clearError: (state, action: PayloadAction<keyof CartState["error"]>) => {
+      if (
+        action.payload === "addItem" ||
+        action.payload === "incrementItem" ||
+        action.payload === "decrementItem" ||
+        action.payload === "removeItem"
+      ) {
+        state.error[action.payload] = {};
+      } else {
+        state.error[action.payload] = null;
+      }
+    },
+    // Limpiar todos los errores
+    clearAllErrors: (state) => {
+      state.error = {
+        getCart: null,
+        addItem: {},
+        incrementItem: {},
+        decrementItem: {},
+        removeItem: {},
       };
     },
-    clearCartError: (state) => {
-      state.error = null;
+    // Limpiar carrito (para logout)
+    clearCart: (state) => {
+      state.cart = null;
+      state.loading = {
+        getCart: false,
+        addItem: {},
+        incrementItem: {},
+        decrementItem: {},
+        removeItem: {},
+      };
+      state.error = {
+        getCart: null,
+        addItem: {},
+        incrementItem: {},
+        decrementItem: {},
+        removeItem: {},
+      };
     },
   },
   extraReducers: (builder) => {
+    // Get Cart
     builder
-      // FETCH CART
-      .addCase(fetchCart.pending, (state) => {
-        state.loading.fetch = true;
-        state.error = null;
+      .addCase(getCart.pending, (state) => {
+        state.loading.getCart = true;
+        state.error.getCart = null;
       })
-      .addCase(fetchCart.fulfilled, (state, action: PayloadAction<Cart>) => {
+      .addCase(getCart.fulfilled, (state, action) => {
+        state.loading.getCart = false;
         state.cart = action.payload;
-        state.loading.fetch = false;
-        state.error = null;
       })
-      .addCase(fetchCart.rejected, (state, action) => {
-        state.error = action.payload || "Error al obtener el carrito";
-        state.loading.fetch = false;
+      .addCase(getCart.rejected, (state, action) => {
+        state.loading.getCart = false;
+        state.error.getCart = action.payload as string;
       })
 
-      // ADD ITEM
-      .addCase(addItemToCart.pending, (state) => {
-        state.loading.addItem = true;
-        state.error = null;
+      // Add Item to Cart
+      .addCase(addItemToCart.pending, (state, action) => {
+        const id = action.meta.arg.productVariantId;
+        state.loading.addItem[id] = true;
+        state.error.addItem[id] = null;
       })
-      .addCase(addItemToCart.fulfilled, (state, action: PayloadAction<Cart>) => {
+      .addCase(addItemToCart.fulfilled, (state, action) => {
+        state.loading.addItem = {};
+        state.error.addItem = {};
         state.cart = action.payload;
-        state.loading.addItem = false;
-        state.error = null;
       })
       .addCase(addItemToCart.rejected, (state, action) => {
-        state.error = action.payload || "Error al agregar ítem al carrito";
-        state.loading.addItem = false;
+        const id = action.meta.arg.productVariantId;
+        state.loading.addItem[id] = false;
+        state.error.addItem[id] = action.payload as string;
       })
 
-      // INCREMENT ITEM
-      .addCase(incrementItem.pending, (state) => {
-        state.loading.increment = true;
-        state.error = null;
+      // Increment Item in Cart
+      .addCase(incrementItemInCart.pending, (state, action) => {
+        const id = action.meta.arg.productVariantId;
+        state.loading.incrementItem[id] = true;
+        state.error.incrementItem[id] = null;
       })
-      .addCase(incrementItem.fulfilled, (state, action: PayloadAction<Cart>) => {
+      .addCase(incrementItemInCart.fulfilled, (state, action) => {
+        // Limpiar todos los loading y error de incrementItem
+        state.loading.incrementItem = {};
+        state.error.incrementItem = {};
         state.cart = action.payload;
-        state.loading.increment = false;
-        state.error = null;
       })
-      .addCase(incrementItem.rejected, (state, action) => {
-        state.error = action.payload || "Error al incrementar cantidad";
-        state.loading.increment = false;
+      .addCase(incrementItemInCart.rejected, (state, action) => {
+        const id = action.meta.arg.productVariantId;
+        state.loading.incrementItem[id] = false;
+        state.error.incrementItem[id] = action.payload as string;
       })
 
-      // DECREMENT ITEM
-      .addCase(decrementItem.pending, (state) => {
-        state.loading.decrement = true;
-        state.error = null;
+      // Decrement Item in Cart
+      .addCase(decrementItemInCart.pending, (state, action) => {
+        const id = action.meta.arg.productVariantId;
+        state.loading.decrementItem[id] = true;
+        state.error.decrementItem[id] = null;
       })
-      .addCase(decrementItem.fulfilled, (state, action: PayloadAction<Cart>) => {
+      .addCase(decrementItemInCart.fulfilled, (state, action) => {
+        state.loading.decrementItem = {};
+        state.error.decrementItem = {};
         state.cart = action.payload;
-        state.loading.decrement = false;
-        state.error = null;
       })
-      .addCase(decrementItem.rejected, (state, action) => {
-        state.error = action.payload || "Error al decrementar cantidad";
-        state.loading.decrement = false;
+      .addCase(decrementItemInCart.rejected, (state, action) => {
+        const id = action.meta.arg.productVariantId;
+        state.loading.decrementItem[id] = false;
+        state.error.decrementItem[id] = action.payload as string;
       })
 
-      // REMOVE ITEM
-      .addCase(removeItem.pending, (state) => {
-        state.loading.removeItem = true;
-        state.error = null;
+      // Remove Item from Cart
+      .addCase(removeItemFromCart.pending, (state, action) => {
+        const id = action.meta.arg.productVariantId;
+        state.loading.removeItem[id] = true;
+        state.error.removeItem[id] = null;
       })
-      .addCase(removeItem.fulfilled, (state, action: PayloadAction<Cart>) => {
+      .addCase(removeItemFromCart.fulfilled, (state, action) => {
+        state.loading.removeItem = {};
+        state.error.removeItem = {};
         state.cart = action.payload;
-        state.loading.removeItem = false;
-        state.error = null;
       })
-      .addCase(removeItem.rejected, (state, action) => {
-        state.error = action.payload || "Error al eliminar ítem del carrito";
-        state.loading.removeItem = false;
+      .addCase(removeItemFromCart.rejected, (state, action) => {
+        const id = action.meta.arg.productVariantId;
+        state.loading.removeItem[id] = false;
+        state.error.removeItem[id] = action.payload as string;
       });
   },
 });
 
-export const { clearCartState, clearCartError } = cartSlice.actions;
-
-// Selectores
-export const selectCart = (state: RootState) => state.cart.cart;
-export const selectCartLoading = (state: RootState) => state.cart.loading;
-export const selectCartError = (state: RootState) => state.cart.error;
-export const selectCartFetchLoading = (state: RootState) => state.cart.loading.fetch;
-export const selectCartAddItemLoading = (state: RootState) => state.cart.loading.addItem;
-export const selectCartIncrementLoading = (state: RootState) => state.cart.loading.increment;
-export const selectCartDecrementLoading = (state: RootState) => state.cart.loading.decrement;
-export const selectCartRemoveItemLoading = (state: RootState) => state.cart.loading.removeItem;
-
+export const { clearError, clearAllErrors, clearCart } = cartSlice.actions;
 export default cartSlice.reducer;

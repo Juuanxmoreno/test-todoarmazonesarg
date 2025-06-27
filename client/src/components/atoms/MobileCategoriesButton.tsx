@@ -1,32 +1,24 @@
 "use client";
 
 import { Menu, X } from "lucide-react";
-import { useState, useEffect } from "react";
-import { eventEmitter } from "@/utils/eventEmitter";
+import { useState } from "react";
+import { useEventListener } from "@/hooks/useEventBus";
+import { uiEvents } from "@/utils/eventBus";
 
 const MobileCategoriesButton = () => {
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    const handleToggle = () => {
-      setIsOpen(prev => !prev);
-    };
+  // Escuchar eventos con los nuevos hooks
+  useEventListener('ui:toggleMobileSidebar', () => {
+    setIsOpen(prev => !prev);
+  });
 
-    const handleClose = () => {
-      setIsOpen(false);
-    };
-
-    eventEmitter.on('toggle-mobile-sidebar', handleToggle);
-    eventEmitter.on('close-mobile-sidebar', handleClose);
-
-    return () => {
-      eventEmitter.off('toggle-mobile-sidebar', handleToggle);
-      eventEmitter.off('close-mobile-sidebar', handleClose);
-    };
-  }, []);
+  useEventListener('ui:closeMobileSidebar', () => {
+    setIsOpen(false);
+  });
 
   const handleToggle = () => {
-    eventEmitter.emit('toggle-mobile-sidebar');
+    uiEvents.toggleMobileSidebar();
   };
 
   return (

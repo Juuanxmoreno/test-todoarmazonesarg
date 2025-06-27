@@ -10,7 +10,8 @@ import {
   Plus,
   ChevronRight,
 } from "lucide-react";
-import { eventEmitter } from "@/utils/eventEmitter";
+import { useEventListener } from "@/hooks/useEventBus";
+import { uiEvents } from "@/utils/eventBus";
 
 const categories = [
   {
@@ -70,24 +71,14 @@ const MobileSidebar = () => {
 
   const categoryInfo = getCurrentCategoryInfo();
 
-  // Escuchar eventos de mitt
-  useEffect(() => {
-    const handleToggle = () => {
-      setIsOpen((prev) => !prev);
-    };
+  // Escuchar eventos con los nuevos hooks
+  useEventListener('ui:toggleMobileSidebar', () => {
+    setIsOpen(prev => !prev);
+  });
 
-    const handleClose = () => {
-      setIsOpen(false);
-    };
-
-    eventEmitter.on("toggle-mobile-sidebar", handleToggle);
-    eventEmitter.on("close-mobile-sidebar", handleClose);
-
-    return () => {
-      eventEmitter.off("toggle-mobile-sidebar", handleToggle);
-      eventEmitter.off("close-mobile-sidebar", handleClose);
-    };
-  }, []);
+  useEventListener('ui:closeMobileSidebar', () => {
+    setIsOpen(false);
+  });
 
   // Detectar la categoría activa desde la URL y abrirla si no está abierta
   useEffect(() => {
@@ -102,12 +93,12 @@ const MobileSidebar = () => {
 
   // Cerrar sidebar al hacer clic en un enlace
   const handleLinkClick = () => {
-    eventEmitter.emit("close-mobile-sidebar");
+    uiEvents.closeMobileSidebar();
   };
 
   // Cerrar sidebar al hacer clic en overlay
   const handleOverlayClick = () => {
-    eventEmitter.emit("close-mobile-sidebar");
+    uiEvents.closeMobileSidebar();
   };
 
   return (
@@ -151,7 +142,7 @@ const MobileSidebar = () => {
               {/* Título */}
               <h1 className="text-lg font-bold text-gray-900 leading-tight">
                 {categoryInfo.subcategory
-                  ? categoryInfo.subcategory.name
+                  ? `${categoryInfo.subcategory.name} para ${categoryInfo.category.name}`
                   : categoryInfo.category.name}
               </h1>
             </div>

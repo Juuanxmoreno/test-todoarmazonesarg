@@ -3,6 +3,8 @@ import SearchIcon from "../atoms/Icon/SearchIcon";
 import { useProducts } from "@/hooks/useProducts";
 import ProductCard from "../molecules/ProductCard";
 import { usePathname } from "next/navigation";
+import { useEventListener } from "@/hooks/useEventBus";
+import { searchEvents } from "@/utils/eventBus";
 
 const SearchDrawer: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -13,6 +15,21 @@ const SearchDrawer: React.FC = () => {
 
   const { searchResults, searchLoading, searchProducts, clearSearchResults } =
     useProducts();
+
+  // Escuchar eventos para abrir/cerrar el drawer
+  useEventListener("search:openDrawer", () => {
+    setOpen(true);
+  });
+
+  useEventListener("search:closeDrawer", () => {
+    handleClose();
+  });
+
+  useEventListener("search:closeIfOpen", () => {
+    if (open) {
+      handleClose();
+    }
+  });
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,9 +51,7 @@ const SearchDrawer: React.FC = () => {
 
   // Cerrar drawer cuando cambie el pathname
   useEffect(() => {
-    if (open) {
-      handleClose();
-    }
+    searchEvents.closeIfOpen();
   }, [pathname]);
 
   return (
@@ -44,7 +59,7 @@ const SearchDrawer: React.FC = () => {
       {/* Botón para abrir el Drawer */}
       <button
         className="flex items-center gap-2 bg-white text-black cursor-pointer"
-        onClick={() => setOpen(true)}
+        onClick={() => searchEvents.openDrawer()}
         aria-label="Abrir búsqueda"
       >
         <SearchIcon />
@@ -62,7 +77,7 @@ const SearchDrawer: React.FC = () => {
           className={`absolute inset-0 bg-white bg-opacity-90 transition-opacity duration-300 ${
             open ? "opacity-100" : "opacity-0"
           }`}
-          onClick={handleClose}
+          onClick={() => searchEvents.closeDrawer()}
         />
 
         {/* Contenido del Drawer */}
@@ -76,7 +91,7 @@ const SearchDrawer: React.FC = () => {
           <div className="flex justify-end p-4">
             <button
               className="text-black hover:text-gray-700 text-2xl"
-              onClick={handleClose}
+              onClick={() => searchEvents.closeDrawer()}
               aria-label="Cerrar búsqueda"
             >
               ✕

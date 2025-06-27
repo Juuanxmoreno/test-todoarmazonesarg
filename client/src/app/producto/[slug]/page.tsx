@@ -10,11 +10,18 @@ import { formatCurrency } from "@/utils/formatCurrency";
 import BagIcon from "@/components/atoms/Icon/BagIcon";
 import { MinusIcon, PlusIcon } from "lucide-react";
 import LoadingSpinner from "@/components/atoms/LoadingSpinner";
+import { cartEvents } from "@/utils/eventBus";
+import { addItemToCart } from "@/redux/slices/cartSlice";
 
 const ProductPage = () => {
   const { slug } = useParams();
   const router = useRouter();
-  const { addItem } = useCart();
+  const {
+    addItem,
+    clearSpecificError,
+    getAddItemLoading,
+    getAddItemError,
+  } = useCart();
 
   // Usar el nuevo hook
   const { productDetail, loading, error, fetchProductBySlug } = useProducts();
@@ -22,12 +29,6 @@ const ProductPage = () => {
   // Estado para el color seleccionado (ninguno al inicio)
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-  
-  // Estado local para manejar errores específicos de agregar al carrito
-  const [addError, setAddError] = useState<string | null>(null);
-  
-  // Estado local para manejar loading específico de este producto
-  const [isAdding, setIsAdding] = useState<boolean>(false);
 
   // Si no tenemos un slug en la URL, redirigimos a la página principal
   useEffect(() => {
@@ -139,31 +140,33 @@ const ProductPage = () => {
 
   // Agregar al carrito
   const handleAddToCart = async () => {
-    if (!selectedVariant) return;
-    
-    // Limpiar error anterior
-    setAddError(null);
-    
-    // Activar loading específico para este producto
-    setIsAdding(true);
-    
-    const result = await addItem(selectedVariant.id, quantity);
-    
-    // Desactivar loading específico para este producto
-    setIsAdding(false);
-    
-    if (!result.success) {
-      // Mostrar error específico
-      const errorMessage = typeof result.error === 'string' 
-        ? result.error 
-        : 'Error al agregar al carrito';
-      setAddError(errorMessage);
-      
-      // Limpiar error después de 7 segundos
-      setTimeout(() => setAddError(null), 7000);
+    if (!selectedVariant || selectedVariant.stock === 0) return;
+
+    // Limpiar errores anteriores del carrito
+    clearSpecificError("addItem");
+
+    try {
+      const result = await addItem({
+        productVariantId: selectedVariant.id,
+        quantity: quantity,
+      });
+
+      // Verificar si el thunk fue exitoso
+      if (addItemToCart.fulfilled.match(result)) {
+        // Éxito: abrir el cart drawer
+        cartEvents.openCartDrawer();
+      }
+      // Los errores ya están manejados en el Redux slice
+    } catch (error) {
+      // Solo para errores realmente inesperados que no captura Redux
+      console.error("Error inesperado al agregar al carrito:", error);
     }
-    // La lógica para abrir el CartDrawer está ahora en useCart
   };
+
+  const addLoading = selectedVariant
+    ? getAddItemLoading(selectedVariant.id)
+    : false;
+  const addError = selectedVariant ? getAddItemError(selectedVariant.id) : null;
 
   return (
     <div className="container mx-auto p-4">
@@ -251,7 +254,7 @@ const ProductPage = () => {
                       if (!isOutOfStock) {
                         setSelectedColor(c.hex);
                         // Limpiar error al seleccionar un nuevo color
-                        setAddError(null);
+                        clearSpecificError("addItem");
                       }
                     }}
                   >
@@ -341,17 +344,17 @@ const ProductPage = () => {
               >
                 <button
                   className={`btn rounded-none shadow-none border-none transition-colors duration-300 ease-in-out h-12 text-base px-6 ${
-                    selectedVariant && selectedVariant.stock > 0 && !isAdding
+                    selectedVariant && selectedVariant.stock > 0 && !addLoading
                       ? "bg-[#444444] text-white hover:bg-[#000000] cursor-pointer"
                       : "bg-[#7C7C7C] text-white cursor-not-allowed pointer-events-none"
                   }`}
                   onClick={
-                    selectedVariant && selectedVariant.stock > 0 && !isAdding
+                    selectedVariant && selectedVariant.stock > 0 && !addLoading
                       ? handleAddToCart
                       : undefined
                   }
                 >
-                  {isAdding ? (
+                  {addLoading ? (
                     <>
                       <LoadingSpinner />
                       <span className="ml-2">Agregando...</span>
@@ -365,7 +368,7 @@ const ProductPage = () => {
                 </button>
               </div>
             </div>
-            
+
             {/* Error específico para agregar al carrito */}
             {addError && (
               <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">

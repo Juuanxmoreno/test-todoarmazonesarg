@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import AccountCircleIcon from "../atoms/Icon/AccountCircleIcon";
 import { useAuth } from "@/hooks/useAuth";
-import { authEvents } from "@/utils/authRequiredRequest";
-import { usePendingAction } from "@/hooks/usePendingAction";
+import { useEventListener } from "@/hooks/useEventBus";
 import { usePathname } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import LoadingSpinner from "../atoms/LoadingSpinner";
@@ -11,9 +10,7 @@ import LoadingSpinner from "../atoms/LoadingSpinner";
 const AccountDrawer: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"login" | "register">("login");
-  const [showPendingMessage, setShowPendingMessage] = useState(false);
-  const { user, fetchCurrentUser, logout, login, register, loading, error } =
-    useAuth();
+  const { user, logout, login, register, loading, error } = useAuth();
 
   const pathname = usePathname();
 
@@ -23,48 +20,15 @@ const AccountDrawer: React.FC = () => {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
-  // Hook para manejar acciones pendientes
-  const { hasPendingAction, clearPendingAction } = usePendingAction({
-    onPendingAction: () => {
-      // Se ejecuta cuando se detecta una acción pendiente
-      setShowPendingMessage(true);
-    },
-    onPendingActionExecuted: () => {
-      // Se ejecuta después de completar la acción pendiente
-      setShowPendingMessage(false);
-      // Cerrar el drawer automáticamente después de ejecutar la acción
-      setTimeout(() => setOpen(false), 500);
-    },
-  });
-
-  useEffect(() => {
-    fetchCurrentUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Escuchar evento global para abrir el Drawer
-  useEffect(() => {
-    const handler = () => setOpen(true);
-    authEvents.on("openAccountDrawer", handler);
-    return () => {
-      authEvents.off("openAccountDrawer", handler);
-    };
-  }, []);
+  useEventListener("auth:openAccountDrawer", () => {
+    setOpen(true);
+  });
 
   // Cierra el Drawer al cambiar de ruta
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
-
-  // Cierra el Drawer cuando el usuario se autentica exitosamente
-  useEffect(() => {
-    if (user) {
-      // Si el usuario se autenticó, cerrar el drawer
-      setOpen(false);
-      // También resetear el mensaje de acción pendiente
-      setShowPendingMessage(false);
-    }
-  }, [user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,11 +48,6 @@ const AccountDrawer: React.FC = () => {
   const handleTabChange = (newTab: "login" | "register") => {
     setTab(newTab);
     resetForms();
-  };
-
-  const handleCancelPendingAction = () => {
-    clearPendingAction();
-    setShowPendingMessage(false);
   };
 
   return (
@@ -141,29 +100,6 @@ const AccountDrawer: React.FC = () => {
             </div>
             <span className="text-lg text-[#000000]">MI CUENTA</span>
           </div>
-
-          {/* Mensaje de acción pendiente */}
-          {showPendingMessage && hasPendingAction && !user && (
-            <div className="mx-6 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-blue-800 font-medium text-sm">
-                    Acción pendiente
-                  </p>
-                  <p className="text-blue-600 text-xs mt-1">
-                    Inicia sesión para completar tu acción anterior
-                  </p>
-                </div>
-                <button
-                  onClick={handleCancelPendingAction}
-                  className="text-blue-400 hover:text-blue-600 text-xs"
-                  aria-label="Cancelar acción pendiente"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Si hay usuario, saludo y links */}
           {user ? (

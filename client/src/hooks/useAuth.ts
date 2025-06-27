@@ -6,10 +6,16 @@ import {
   fetchCurrentUser,
   resetAuthError,
 } from "@/redux/slices/authSlice";
+import { useCallback } from "react";
 
 export const useAuth = () => {
   const { user, loading, error } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
+
+  // Memoizar fetchCurrentUser para que sea estable
+  const fetchCurrentUserCallback = useCallback(() => {
+    return dispatch(fetchCurrentUser());
+  }, [dispatch]);
 
   return {
     user,
@@ -19,7 +25,7 @@ export const useAuth = () => {
     register: (data: { email: string; password: string }) =>
       dispatch(register(data)),
     logout: () => dispatch(logout()),
-    fetchCurrentUser: () => dispatch(fetchCurrentUser()),
+    fetchCurrentUser: fetchCurrentUserCallback,
     resetAuthError: () => dispatch(resetAuthError()),
   };
 };

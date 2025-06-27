@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import type {
+import {
   CreateOrderPayload,
   Order,
   OrdersResponse,
@@ -7,8 +7,9 @@ import type {
 import { RootState } from "../store";
 import axiosInstance from "@/utils/axiosInstance";
 import { authRequiredRequest } from "@/utils/authRequiredRequest";
-import { getErrorMessage, type ApiResponse } from "@/types/api";
+import { getErrorMessage, ApiResponse } from "@/types/api";
 import { OrderStatus } from "@/enums/order.enum";
+import { IUser } from "@/interfaces/user";
 
 // Thunk para crear una orden
 export const createOrder = createAsyncThunk<
@@ -44,10 +45,12 @@ export const fetchOrders = createAsyncThunk<
     if (params?.cursor) query.push(`cursor=${params.cursor}`);
     if (params?.limit) query.push(`limit=${params.limit}`);
     if (query.length) url += `?${query.join("&")}`;
+    const state = thunkAPI.getState() as { auth: { user: IUser | null } };
+    const user = state.auth.user;
     const res = await authRequiredRequest<ApiResponse<OrdersResponse>>({
       method: "GET",
       url,
-    });
+    }, user);
     if (res.status === "success" && res.data) {
       return res.data;
     } else {

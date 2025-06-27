@@ -6,8 +6,10 @@ import Link from "next/link";
 import BagIcon from "../atoms/Icon/BagIcon";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { useCart } from "@/hooks/useCart";
+import { cartEvents, searchEvents } from "@/utils/eventBus";
 import { useState } from "react";
 import LoadingSpinner from "../atoms/LoadingSpinner";
+import { addItemToCart } from "@/redux/slices/cartSlice";
 
 const ProductCard = ({
   slug,
@@ -19,7 +21,12 @@ const ProductCard = ({
   priceUSD,
   variants,
 }: Product) => {
-  const { addItem } = useCart();
+  const {
+    addItem,
+    clearSpecificError,
+    getAddItemLoading,
+    getAddItemError,
+  } = useCart();
 
   // Obtener colores únicos de todas las variantes
   const uniqueColors = Array.from(
@@ -28,12 +35,6 @@ const ProductCard = ({
 
   // Estado para el color seleccionado (ninguno al inicio)
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  
-  // Estado local para manejar errores específicos de este producto
-  const [addError, setAddError] = useState<string | null>(null);
-  
-  // Estado local para manejar loading específico de este producto
-  const [isAdding, setIsAdding] = useState<boolean>(false);
 
   // Encontrar la variante seleccionada según el color
   const selectedVariant = selectedColor
@@ -46,29 +47,32 @@ const ProductCard = ({
   const handleAddToCart = async () => {
     if (!selectedVariant || selectedVariant.stock === 0) return;
 
-    // Limpiar error anterior
-    setAddError(null);
-    
-    // Activar loading específico para este producto
-    setIsAdding(true);
+    // Limpiar errores anteriores del carrito
+    clearSpecificError("addItem");
 
-    const result = await addItem(selectedVariant.id, 1);
-    
-    // Desactivar loading específico para este producto
-    setIsAdding(false);
+    try {
+      const result = await addItem({
+        productVariantId: selectedVariant.id,
+        quantity: 1,
+      });
 
-    if (!result.success) {
-      // Mostrar error específico de este producto
-      const errorMessage = typeof result.error === 'string' 
-        ? result.error 
-        : 'Error al agregar al carrito';
-      setAddError(errorMessage);
-      
-      // Limpiar error después de 5 segundos
-      setTimeout(() => setAddError(null), 5000);
+      // Verificar si el thunk fue exitoso
+      if (addItemToCart.fulfilled.match(result)) {
+        // Éxito: cerrar SearchDrawer si está abierto y abrir el cart drawer
+        searchEvents.closeIfOpen();
+        cartEvents.openCartDrawer();
+      }
+      // Los errores ya están manejados en el Redux slice
+    } catch (error) {
+      // Solo para errores realmente inesperados que no captura Redux
+      console.error("Error inesperado al agregar al carrito:", error);
     }
-    // La lógica para abrir el CartDrawer está ahora en useCart
   };
+
+  const addLoading = selectedVariant
+    ? getAddItemLoading(selectedVariant.id)
+    : false;
+  const addError = selectedVariant ? getAddItemError(selectedVariant.id) : null;
 
   return (
     <div className="card card-border border-[#e1e1e1] hover:shadow-lg bg-white rounded-none">
@@ -125,15 +129,15 @@ const ProductCard = ({
                 key={c.hex}
                 type="button"
                 className={`flex items-center gap-1 focus:outline-none relative ${
-                  isOutOfStock 
-                    ? "pointer-events-none cursor-not-allowed" 
+                  isOutOfStock
+                    ? "pointer-events-none cursor-not-allowed"
                     : "cursor-pointer"
                 }`}
                 onClick={() => {
                   if (!isOutOfStock) {
                     setSelectedColor(c.hex);
                     // Limpiar error al seleccionar un nuevo color
-                    setAddError(null);
+                    clearSpecificError("addItem");
                   }
                 }}
               >
@@ -180,25 +184,21 @@ const ProductCard = ({
           >
             <button
               className={`btn rounded-none shadow-none border-none transition-colors duration-300 ease-in-out ${
-                selectedVariant && selectedVariant.stock > 0 && !isAdding
+                selectedVariant && selectedVariant.stock > 0 && !addLoading
                   ? "bg-[#f2f2f2] text-[#222222] hover:bg-[#000000] hover:text-[#ffffff] cursor-pointer"
                   : "bg-[#e5e5e5] text-[#888888] cursor-not-allowed pointer-events-none"
               }`}
               onClick={
-                selectedVariant && selectedVariant.stock > 0 && !isAdding
+                selectedVariant && selectedVariant.stock > 0 && !addLoading
                   ? handleAddToCart
                   : undefined
               }
             >
-              {isAdding ? (
-                <LoadingSpinner size="sm" />
-              ) : (
-                <BagIcon />
-              )}
+              {addLoading ? <LoadingSpinner size="sm" /> : <BagIcon />}
             </button>
           </div>
         </div>
-        
+
         {/* Error específico para este producto */}
         {addError && (
           <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-xs text-center">
