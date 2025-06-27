@@ -103,7 +103,7 @@ const AccountDrawer: React.FC = () => {
             <div>
               <AccountCircleIcon />
             </div>
-            <span className="text-lg text-[#000000]">MI CUENTA</span>
+            <span className="text-lg text-[#000000]">MI CUENTAs</span>
           </div>
 
           {/* Si hay usuario, saludo y links */}
