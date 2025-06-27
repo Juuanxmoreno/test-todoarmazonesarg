@@ -25,6 +25,11 @@ const AccountDrawer: React.FC = () => {
     setOpen(true);
   });
 
+  // Escuchar evento global para cerrar el Drawer
+  useEventListener("auth:closeAccountDrawer", () => {
+    setOpen(false);
+  });
+
   // Cierra el Drawer al cambiar de ruta
   useEffect(() => {
     setOpen(false);
@@ -127,7 +132,7 @@ const AccountDrawer: React.FC = () => {
                   Direcciones
                 </Link>
                 <button
-                  className="text-black underline-animate self-center text-center"
+                  className="text-black underline-animate self-center text-center cursor-pointer"
                   onClick={async () => {
                     await logout();
                   }}

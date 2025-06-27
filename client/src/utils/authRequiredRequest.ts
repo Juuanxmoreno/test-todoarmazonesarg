@@ -1,9 +1,15 @@
 import { ApiResponse } from "@/types/api";
 import { CurrentUserResponse } from "@/interfaces/auth";
-import { authEvents } from "@/utils/eventBus";
 import axiosInstance from "./axiosInstance";
 import type { AxiosRequestConfig, AxiosResponse } from "axios";
 import type { IUser } from "@/interfaces/user";
+
+export class AuthRequiredError extends Error {
+  constructor(message = "Usuario no autenticado") {
+    super(message);
+    this.name = "AuthRequiredError";
+  }
+}
 
 export async function authRequiredRequest<T = unknown>(
   config: AxiosRequestConfig,
@@ -17,9 +23,7 @@ export async function authRequiredRequest<T = unknown>(
 
       // Verifica si el usuario está autenticado
       if (!authResponse.data.data || !authResponse.data.data.authenticated) {
-        // Si no está autenticado, dispara evento para abrir el Drawer
-        authEvents.openAccountDrawer();
-        throw new Error("Usuario no autenticado");
+        throw new AuthRequiredError();
       }
     }
 

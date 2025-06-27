@@ -3,6 +3,10 @@ import { IUser } from "@/interfaces/user";
 import { AuthResponse, CurrentUserResponse } from "@/interfaces/auth";
 import { ApiResponse, getErrorMessage } from "@/types/api";
 import axiosInstance from "@/utils/axiosInstance";
+import { clearPendingAction } from "./pendingActionSlice";
+import { RootState } from "@/redux/store";
+import { addItemToCart } from "./cartSlice";
+import { authEvents } from "@/utils/eventBus";
 
 interface AuthState {
   user: IUser | null;
@@ -21,27 +25,41 @@ export const login = createAsyncThunk<
   IUser,
   { email: string; password: string },
   { rejectValue: string }
->("auth/login", async (credentials, { rejectWithValue }) => {
-  try {
-    const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
-      "/auth/login",
-      credentials
-    );
-    if (!response.data.data || !response.data.data.user) {
-      return rejectWithValue("Respuesta inválida del servidor");
+>(
+  "auth/login",
+  async (credentials, { rejectWithValue, dispatch, getState }) => {
+    try {
+      const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
+        "/auth/login",
+        credentials
+      );
+      if (!response.data.data || !response.data.data.user) {
+        return rejectWithValue("Respuesta inválida del servidor");
+      }
+      // Ejecutar acción pendiente si existe
+      const state = getState() as RootState;
+      const pending = state.pendingAction.action;
+      if (pending) {
+        if (pending.type === "addItemToCart") {
+          dispatch(addItemToCart(pending.payload));
+          authEvents.closeAccountDrawer();
+        }
+        // Aquí puedes agregar más tipos de acciones protegidas
+      }
+      dispatch(clearPendingAction());
+      return response.data.data.user;
+    } catch (error: unknown) {
+      return rejectWithValue(getErrorMessage(error));
     }
-    return response.data.data.user;
-  } catch (error: unknown) {
-    return rejectWithValue(getErrorMessage(error));
   }
-});
+);
 
 // 📝 Registro
 export const register = createAsyncThunk<
   IUser,
   { email: string; password: string },
   { rejectValue: string }
->("auth/register", async (data, { rejectWithValue }) => {
+>("auth/register", async (data, { rejectWithValue, dispatch, getState }) => {
   try {
     const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
       "/auth/register",
@@ -50,6 +68,17 @@ export const register = createAsyncThunk<
     if (!response.data.data || !response.data.data.user) {
       return rejectWithValue("Respuesta inválida del servidor");
     }
+    // Ejecutar acción pendiente si existe
+    const state = getState() as RootState;
+    const pending = state.pendingAction.action;
+    if (pending) {
+      if (pending.type === "addItemToCart") {
+        dispatch(addItemToCart(pending.payload));
+        authEvents.closeAccountDrawer();
+      }
+      // Aquí puedes agregar más tipos de acciones protegidas
+    }
+    dispatch(clearPendingAction());
     return response.data.data.user;
   } catch (error: unknown) {
     return rejectWithValue(getErrorMessage(error));
@@ -69,14 +98,14 @@ export const fetchCurrentUser = createAsyncThunk<
     if (!response.data.data) {
       return rejectWithValue("Respuesta inválida del servidor");
     }
-    
+
     const { user, authenticated } = response.data.data;
-    
+
     // Si no está autenticado, retornamos null (no es un error)
     if (!authenticated || !user) {
       return null;
     }
-    
+
     return user;
   } catch (error: unknown) {
     return rejectWithValue(getErrorMessage(error));

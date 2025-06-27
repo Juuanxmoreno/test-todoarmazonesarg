@@ -5,8 +5,11 @@ import {
   UpdateCartItemPayload,
 } from "@/interfaces/cart";
 import { ApiResponse, getErrorMessage } from "@/types/api";
-import { authRequiredRequest } from "@/utils/authRequiredRequest";
+import { authRequiredRequest, AuthRequiredError } from "@/utils/authRequiredRequest";
 import { IUser } from "@/interfaces/user";
+import { cartEvents } from "@/utils/eventBus";
+import { setPendingAction } from "./pendingActionSlice";
+import { authEvents } from "@/utils/eventBus";
 
 // Estado del slice
 interface CartState {
@@ -85,6 +88,11 @@ export const addItemToCart = createAsyncThunk(
       );
       return response.data!;
     } catch (error: unknown) {
+      if (error instanceof AuthRequiredError) {
+        thunkAPI.dispatch(setPendingAction({ type: "addItemToCart", payload }));
+        authEvents.openAccountDrawer();
+        return thunkAPI.rejectWithValue("Usuario no autenticado");
+      }
       return thunkAPI.rejectWithValue(getErrorMessage(error));
     }
   }
@@ -226,6 +234,10 @@ const cartSlice = createSlice({
         state.loading.addItem = {};
         state.error.addItem = {};
         state.cart = action.payload;
+        // Abrir el CartDrawer solo después de que el carrito se haya actualizado correctamente
+        if (typeof window !== "undefined") {
+          cartEvents.openCartDrawer();
+        }
       })
       .addCase(addItemToCart.rejected, (state, action) => {
         const id = action.meta.arg.productVariantId;

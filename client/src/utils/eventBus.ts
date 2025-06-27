@@ -4,6 +4,7 @@ import mitt from "mitt";
 export type EventMap = {
   // Eventos de autenticación
   "auth:openAccountDrawer": void;
+  "auth:closeAccountDrawer": void;
   
   // Eventos de UI - Mobile Sidebar
   "ui:toggleMobileSidebar": void;
@@ -25,6 +26,7 @@ export const eventBus = mitt<EventMap>();
 // 🎪 Funciones helper para eventos de autenticación
 export const authEvents = {
   openAccountDrawer: () => eventBus.emit("auth:openAccountDrawer"),
+  closeAccountDrawer: () => eventBus.emit("auth:closeAccountDrawer"),
 };
 
 // 🎪 Funciones helper para eventos de UI
