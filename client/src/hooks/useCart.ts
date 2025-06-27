@@ -8,11 +8,17 @@ import {
   removeItem as removeItemFromCart,
   incrementItem,
   decrementItem,
+  clearCartError,
+  selectCart,
+  selectCartLoading,
+  selectCartError,
 } from "@/redux/slices/cartSlice";
 
 export const useCart = () => {
   const dispatch = useAppDispatch();
-  const { cart, loading, error } = useAppSelector((state) => state.cart);
+  const cart = useAppSelector(selectCart);
+  const loading = useAppSelector(selectCartLoading);
+  const error = useAppSelector(selectCartError);
 
   const fetchCart = useCallback(() => {
     dispatch(fetchCartAction());
@@ -24,6 +30,15 @@ export const useCart = () => {
         const result = await dispatch(
           addItemToCart({ productVariantId, quantity })
         ).unwrap(); // <- importante: lanza error si la request falla
+        
+        // Abrir CartDrawer automáticamente cuando se agrega exitosamente
+        const drawerCheckbox = document.getElementById(
+          "cart-drawer"
+        ) as HTMLInputElement | null;
+        if (drawerCheckbox) {
+          drawerCheckbox.checked = true;
+        }
+        
         return { success: true, cart: result };
       } catch (err) {
         return { success: false, error: err };
@@ -33,25 +48,50 @@ export const useCart = () => {
   );
 
   const removeItem = useCallback(
-    (productVariantId: string) => {
-      dispatch(removeItemFromCart({ productVariantId }));
+    async (productVariantId: string) => {
+      try {
+        const result = await dispatch(
+          removeItemFromCart({ productVariantId })
+        ).unwrap();
+        return { success: true, cart: result };
+      } catch (err) {
+        return { success: false, error: err };
+      }
     },
     [dispatch]
   );
 
   const increment = useCallback(
-    (productVariantId: string) => {
-      dispatch(incrementItem({ productVariantId }));
+    async (productVariantId: string) => {
+      try {
+        const result = await dispatch(
+          incrementItem({ productVariantId })
+        ).unwrap();
+        return { success: true, cart: result };
+      } catch (err) {
+        return { success: false, error: err };
+      }
     },
     [dispatch]
   );
 
   const decrement = useCallback(
-    (productVariantId: string) => {
-      dispatch(decrementItem({ productVariantId }));
+    async (productVariantId: string) => {
+      try {
+        const result = await dispatch(
+          decrementItem({ productVariantId })
+        ).unwrap();
+        return { success: true, cart: result };
+      } catch (err) {
+        return { success: false, error: err };
+      }
     },
     [dispatch]
   );
+
+  const clearError = useCallback(() => {
+    dispatch(clearCartError());
+  }, [dispatch]);
 
   return {
     cart,
@@ -62,5 +102,6 @@ export const useCart = () => {
     removeItem,
     increment,
     decrement,
+    clearError,
   };
 };

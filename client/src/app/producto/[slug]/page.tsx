@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCart } from "@/hooks/useCart";
-import BagIcon from "@/components/atoms/Icon/BagIcon";
-import { formatCurrency } from "@/utils/formatCurrency";
-import Link from "next/link";
-import Image from "next/image";
-import { MinusIcon, PlusIcon } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
+import Image from "next/image";
+import Link from "next/link";
+import { formatCurrency } from "@/utils/formatCurrency";
+import BagIcon from "@/components/atoms/Icon/BagIcon";
+import { MinusIcon, PlusIcon } from "lucide-react";
+import LoadingSpinner from "@/components/atoms/LoadingSpinner";
 
 const ProductPage = () => {
   const { slug } = useParams();
@@ -21,6 +22,12 @@ const ProductPage = () => {
   // Estado para el color seleccionado (ninguno al inicio)
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  
+  // Estado local para manejar errores específicos de agregar al carrito
+  const [addError, setAddError] = useState<string | null>(null);
+  
+  // Estado local para manejar loading específico de este producto
+  const [isAdding, setIsAdding] = useState<boolean>(false);
 
   // Si no tenemos un slug en la URL, redirigimos a la página principal
   useEffect(() => {
@@ -131,15 +138,31 @@ const ProductPage = () => {
   };
 
   // Agregar al carrito
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!selectedVariant) return;
-    addItem(selectedVariant.id, quantity);
-    const drawerCheckbox = document.getElementById(
-      "cart-drawer"
-    ) as HTMLInputElement | null;
-    if (drawerCheckbox) {
-      drawerCheckbox.checked = true;
+    
+    // Limpiar error anterior
+    setAddError(null);
+    
+    // Activar loading específico para este producto
+    setIsAdding(true);
+    
+    const result = await addItem(selectedVariant.id, quantity);
+    
+    // Desactivar loading específico para este producto
+    setIsAdding(false);
+    
+    if (!result.success) {
+      // Mostrar error específico
+      const errorMessage = typeof result.error === 'string' 
+        ? result.error 
+        : 'Error al agregar al carrito';
+      setAddError(errorMessage);
+      
+      // Limpiar error después de 7 segundos
+      setTimeout(() => setAddError(null), 7000);
     }
+    // La lógica para abrir el CartDrawer está ahora en useCart
   };
 
   return (
@@ -173,7 +196,7 @@ const ProductPage = () => {
                   className="underline-animate no-underline"
                 >
                   {productDetail.subcategory.name}
-                  {productDetail.category.length > 1 && ` (en ${cat.name})`}
+                  {productDetail.category.length > 1 && ` (${cat.name})`}
                 </Link>
               </li>
             ))}
@@ -224,7 +247,13 @@ const ProductPage = () => {
                     key={c.hex}
                     type="button"
                     className="flex items-center gap-1 focus:outline-none relative"
-                    onClick={() => !isOutOfStock && setSelectedColor(c.hex)}
+                    onClick={() => {
+                      if (!isOutOfStock) {
+                        setSelectedColor(c.hex);
+                        // Limpiar error al seleccionar un nuevo color
+                        setAddError(null);
+                      }
+                    }}
                   >
                     <div
                       className="tooltip"
@@ -312,21 +341,37 @@ const ProductPage = () => {
               >
                 <button
                   className={`btn rounded-none shadow-none border-none transition-colors duration-300 ease-in-out h-12 text-base px-6 ${
-                    selectedVariant && selectedVariant.stock > 0
+                    selectedVariant && selectedVariant.stock > 0 && !isAdding
                       ? "bg-[#444444] text-white hover:bg-[#000000] cursor-pointer"
                       : "bg-[#7C7C7C] text-white cursor-not-allowed pointer-events-none"
                   }`}
                   onClick={
-                    selectedVariant && selectedVariant.stock > 0
+                    selectedVariant && selectedVariant.stock > 0 && !isAdding
                       ? handleAddToCart
                       : undefined
                   }
                 >
-                  <BagIcon />
-                  <span className="ml-2">Agregar al carrito</span>
+                  {isAdding ? (
+                    <>
+                      <LoadingSpinner />
+                      <span className="ml-2">Agregando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <BagIcon />
+                      <span className="ml-2">Agregar al carrito</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
+            
+            {/* Error específico para agregar al carrito */}
+            {addError && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+                {addError}
+              </div>
+            )}
           </div>
           <div className="mb-4">
             <p className="font-normal text-sm text-[#222222]">
@@ -365,7 +410,7 @@ const ProductPage = () => {
                         href={`/categorias/${cat.slug}/${productDetail.subcategory.slug}`}
                         className="hover:underline"
                       >
-                        {productDetail.subcategory.name} (en {cat.name})
+                        {productDetail.subcategory.name} ({cat.name})
                       </Link>
                       {idx < arr.length - 1 && ", "}
                     </span>

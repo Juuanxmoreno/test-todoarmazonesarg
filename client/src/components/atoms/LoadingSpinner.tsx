@@ -1,6 +1,10 @@
-const LoadingSpinner = () => {
+interface LoadingSpinnerProps {
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+}
+
+const LoadingSpinner = ({ size = 'md' }: LoadingSpinnerProps) => {
   return (
-    <span className="loading loading-spinner loading-xs sm:loading-sm md:loading-md lg:loading-lg xl:loading-xl"></span>
+    <span className={`loading loading-spinner loading-${size}`}></span>
   );
 };
 

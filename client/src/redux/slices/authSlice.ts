@@ -1,8 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { IUser } from "@/interfaces/user";
-import { AuthResponse } from "@/interfaces/auth";
+import { AuthResponse, CurrentUserResponse } from "@/interfaces/auth";
 import { ApiResponse, getErrorMessage } from "@/types/api";
 import axiosInstance from "@/utils/axiosInstance";
+import { executePendingAction, clearPendingAction } from "@/utils/authRequiredRequest";
 
 interface AuthState {
   user: IUser | null;
@@ -58,18 +59,21 @@ export const register = createAsyncThunk<
 
 // 👤 Obtener usuario actual
 export const fetchCurrentUser = createAsyncThunk<
-  IUser,
+  IUser | null,
   void,
   { rejectValue: string }
 >("auth/fetchCurrentUser", async (_, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.get<ApiResponse<AuthResponse>>(
+    const response = await axiosInstance.get<ApiResponse<CurrentUserResponse>>(
       "/auth/me"
     );
-    if (!response.data.data || !response.data.data.user) {
-      return rejectWithValue("No autenticado");
+    
+    // La respuesta siempre será exitosa ahora
+    if (response.data.status === "success" && response.data.data) {
+      return response.data.data.user; // Puede ser null si no hay sesión
     }
-    return response.data.data.user;
+    
+    return null;
   } catch (error: unknown) {
     return rejectWithValue(getErrorMessage(error));
   }
@@ -106,10 +110,14 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action: PayloadAction<IUser>) => {
         state.loading = false;
         state.user = action.payload;
+        // Ejecutar acción pendiente después de login exitoso
+        executePendingAction();
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Error inesperado";
+        // Limpiar acción pendiente si el login falla
+        clearPendingAction();
       })
 
       // Registro
@@ -120,10 +128,14 @@ const authSlice = createSlice({
       .addCase(register.fulfilled, (state, action: PayloadAction<IUser>) => {
         state.loading = false;
         state.user = action.payload;
+        // Ejecutar acción pendiente después de registro exitoso
+        executePendingAction();
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Error inesperado";
+        // Limpiar acción pendiente si el registro falla
+        clearPendingAction();
       })
 
       // Obtener usuario actual
@@ -133,20 +145,22 @@ const authSlice = createSlice({
       })
       .addCase(
         fetchCurrentUser.fulfilled,
-        (state, action: PayloadAction<IUser>) => {
+        (state, action: PayloadAction<IUser | null>) => {
           state.loading = false;
-          state.user = action.payload;
+          state.user = action.payload; // Puede ser null
         }
       )
       .addCase(fetchCurrentUser.rejected, (state, action) => {
         state.loading = false;
         state.user = null;
-        state.error = action.payload || "Sesión no activa";
+        state.error = action.payload || "Error al verificar sesión";
       })
 
       // Logout
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
+        // Limpiar cualquier acción pendiente al hacer logout
+        clearPendingAction();
       });
   },
 });

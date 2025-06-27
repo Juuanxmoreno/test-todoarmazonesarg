@@ -39,10 +39,35 @@ const CheckoutPage = () => {
     fetchCart();
   }, [fetchCart]);
 
+  // Auto-switch to valid payment method when shipping method changes
+  useEffect(() => {
+    if (
+      shippingMethod === ShippingMethod.ParcelCompany &&
+      paymentMethod === PaymentMethod.CashOnDelivery
+    ) {
+      setPaymentMethod(PaymentMethod.BankTransfer);
+    }
+  }, [shippingMethod, paymentMethod]);
+
+  // Auto-switch to valid shipping method when payment method changes
+  useEffect(() => {
+    if (
+      paymentMethod === PaymentMethod.CashOnDelivery &&
+      shippingMethod === ShippingMethod.ParcelCompany
+    ) {
+      setShippingMethod(ShippingMethod.Motorcycle);
+    }
+  }, [paymentMethod, shippingMethod]);
+
   const bankTransferFee =
     paymentMethod === PaymentMethod.BankTransfer
       ? (cart?.subTotal ?? 0) * 0.04
       : 0;
+
+  // Check if cart is loading or empty
+  const isCartFetching = cartLoading.fetch;
+  const isCartEmpty = !cart?.items?.length;
+  const isOrderInProgress = orderLoading;
 
   const onSubmit = async (data: AddressFormData) => {
     if (error) resetError();
@@ -164,8 +189,7 @@ const CheckoutPage = () => {
                 )}
               </div>
             ))}
-          </div>
-
+          </div>{" "}
           {/* Shipping Method */}
           <div className="flex flex-col gap-4 mt-4">
             {/* Método de envío */}
@@ -176,7 +200,7 @@ const CheckoutPage = () => {
               <div className="flex flex-col gap-2">
                 {[ShippingMethod.Motorcycle, ShippingMethod.ParcelCompany].map(
                   (method) => {
-                    const isDisabled =
+                    const isRestricted =
                       paymentMethod === PaymentMethod.CashOnDelivery &&
                       method === ShippingMethod.ParcelCompany;
 
@@ -184,19 +208,30 @@ const CheckoutPage = () => {
                       <label
                         key={method}
                         className={`flex items-center gap-2 ${
-                          isDisabled
+                          isRestricted
                             ? "opacity-50 cursor-not-allowed"
                             : "cursor-pointer"
                         }`}
+                        onClick={
+                          isRestricted
+                            ? undefined
+                            : () => setShippingMethod(method)
+                        }
                       >
                         <input
                           type="radio"
                           name="shippingMethod"
                           value={method}
                           checked={shippingMethod === method}
-                          onChange={() => setShippingMethod(method)}
-                          className="radio border-[#e1e1e1] checked:bg-[#222222]"
-                          disabled={isDisabled}
+                          disabled={isRestricted}
+                          onChange={() => {
+                            if (!isRestricted) {
+                              setShippingMethod(method);
+                            }
+                          }}
+                          className={`radio border-[#e1e1e1] checked:bg-[#222222] ${
+                            isRestricted ? "pointer-events-none" : ""
+                          }`}
                         />
                         <span className="text-[#222222] text-sm">
                           {method === ShippingMethod.Motorcycle
@@ -294,7 +329,7 @@ const CheckoutPage = () => {
               <div className="flex flex-col gap-2">
                 {[PaymentMethod.BankTransfer, PaymentMethod.CashOnDelivery].map(
                   (method) => {
-                    const isDisabled =
+                    const isRestricted =
                       shippingMethod === ShippingMethod.ParcelCompany &&
                       method === PaymentMethod.CashOnDelivery;
 
@@ -302,19 +337,30 @@ const CheckoutPage = () => {
                       <label
                         key={method}
                         className={`flex items-center gap-2 ${
-                          isDisabled
+                          isRestricted
                             ? "opacity-50 cursor-not-allowed"
                             : "cursor-pointer"
                         }`}
+                        onClick={
+                          isRestricted
+                            ? undefined
+                            : () => setPaymentMethod(method)
+                        }
                       >
                         <input
                           type="radio"
                           name="paymentMethod"
                           value={method}
                           checked={paymentMethod === method}
-                          onChange={() => setPaymentMethod(method)}
-                          className="radio border-[#e1e1e1] checked:bg-[#222222]"
-                          disabled={isDisabled}
+                          disabled={isRestricted}
+                          onChange={() => {
+                            if (!isRestricted) {
+                              setPaymentMethod(method);
+                            }
+                          }}
+                          className={`radio border-[#e1e1e1] checked:bg-[#222222] ${
+                            isRestricted ? "pointer-events-none" : ""
+                          }`}
                         />
                         <span className="text-[#222222] text-sm">
                           {method === PaymentMethod.BankTransfer
@@ -339,59 +385,65 @@ const CheckoutPage = () => {
           <h2 className="text-2xl font-bold mb-4" style={{ color: "#222222" }}>
             TU PEDIDO
           </h2>
-          <div className="space-y-4">
-            {cart?.items.length ? (
-              cart.items.map((item, idx) => {
-                const variant =
-                  typeof item.productVariant === "string"
-                    ? null
-                    : item.productVariant;
-                return (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-3 border-b pb-2"
-                  >
-                    {variant && (
-                      <Image
-                        src={
-                          variant.images?.[0]
-                            ? process.env.NEXT_PUBLIC_API_URL +
-                              variant.images[0]
-                            : "/placeholder.png"
-                        }
-                        width={40}
-                        height={40}
-                        alt={variant.product.productModel}
-                        className="w-10 h-10 object-cover rounded-none"
-                      />
-                    )}
+          {isCartFetching ? (
+            <div className="flex justify-center items-center py-8">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {cart?.items.length ? (
+                cart.items.map((item, idx) => {
+                  const variant =
+                    typeof item.productVariant === "string"
+                      ? null
+                      : item.productVariant;
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-3 border-b pb-2"
+                    >
+                      {variant && (
+                        <Image
+                          src={
+                            variant.images?.[0]
+                              ? process.env.NEXT_PUBLIC_API_URL +
+                                variant.images[0]
+                              : "/placeholder.png"
+                          }
+                          width={40}
+                          height={40}
+                          alt={variant.product.productModel}
+                          className="w-10 h-10 object-cover rounded-none"
+                        />
+                      )}
 
-                    <div className="flex-1">
-                      <div
-                        className="font-semibold"
-                        style={{ color: "#222222" }}
-                      >
-                        {variant?.product.productModel} {variant?.product.sku}
+                      <div className="flex-1">
+                        <div
+                          className="font-semibold"
+                          style={{ color: "#222222" }}
+                        >
+                          {variant?.product.productModel} {variant?.product.sku}
+                        </div>
+                        <div className="text-sm" style={{ color: "#222222" }}>
+                          Color: {variant?.color.name}
+                        </div>
+                        <div className="text-sm" style={{ color: "#222222" }}>
+                          Cantidad: {item.quantity}
+                        </div>
                       </div>
-                      <div className="text-sm" style={{ color: "#222222" }}>
-                        Color: {variant?.color.name}
-                      </div>
-                      <div className="text-sm" style={{ color: "#222222" }}>
-                        Cantidad: {item.quantity}
+                      <div className="font-bold" style={{ color: "#222222" }}>
+                        {formatCurrency(item.subTotal, "en-US", "USD")}
                       </div>
                     </div>
-                    <div className="font-bold" style={{ color: "#222222" }}>
-                      {formatCurrency(item.subTotal, "en-US", "USD")}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-gray-500" style={{ color: "#222222" }}>
-                Tu carrito está vacío.
-              </div>
-            )}
-          </div>
+                  );
+                })
+              ) : (
+                <div className="text-gray-500" style={{ color: "#222222" }}>
+                  Tu carrito está vacío.
+                </div>
+              )}
+            </div>
+          )}
           <div className="mt-6 border-t pt-4">
             <div
               className="flex justify-between text-lg font-semibold"
@@ -431,15 +483,23 @@ const CheckoutPage = () => {
             <button
               type="submit"
               className={`mt-4 btn rounded-none shadow-none border-none h-12 px-6 w-full transition-colors duration-300 ease-in-out ${
-                orderLoading || cartLoading
+                isOrderInProgress || isCartFetching || isCartEmpty
                   ? "bg-[#666666] cursor-not-allowed pointer-events-none"
                   : "bg-[#222222] hover:bg-[#111111]"
               } text-white`}
               onClick={
-                orderLoading || cartLoading ? undefined : handleSubmit(onSubmit)
+                isOrderInProgress || isCartFetching || isCartEmpty
+                  ? undefined
+                  : handleSubmit(onSubmit)
               }
             >
-              {orderLoading ? <LoadingSpinner /> : "Realizar pedido"}
+              {isOrderInProgress ? (
+                <LoadingSpinner />
+              ) : isCartEmpty ? (
+                "Carrito vacío"
+              ) : (
+                "Realizar pedido"
+              )}
             </button>
           </div>
         </div>

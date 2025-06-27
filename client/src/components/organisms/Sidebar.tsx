@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ChevronDown, ChevronUp, Minus, Plus } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Minus,
+  Plus,
+  ChevronRight,
+} from "lucide-react";
 
 const categories = [
   {
@@ -44,6 +50,24 @@ const Sidebar = () => {
 
   const pathname = usePathname();
 
+  // Función para obtener información de categoría y subcategoría
+  const getCurrentCategoryInfo = () => {
+    const segments = pathname.split("/").filter(Boolean);
+    if (segments[0] !== "categorias") return null;
+
+    const currentCategorySlug = segments[1];
+    const currentSubcategorySlug = segments[2];
+
+    const category = categories.find((cat) => cat.slug === currentCategorySlug);
+    const subcategory = category?.subcategories.find(
+      (sub) => sub.slug === currentSubcategorySlug
+    );
+
+    return { category, subcategory };
+  };
+
+  const categoryInfo = getCurrentCategoryInfo();
+
   // Detectar la categoría activa desde la URL y abrirla si no está abierta
   useEffect(() => {
     const segments = pathname.split("/").filter(Boolean);
@@ -59,6 +83,40 @@ const Sidebar = () => {
   return (
     <aside className="h-full w-64 bg-white hidden sm:block">
       <div className="flex flex-col h-full px-4 py-6">
+        {/* Breadcrumb y título - Solo en desktop */}
+        {categoryInfo?.category && (
+          <div className="mb-6 pb-4 border-b border-gray-200">
+            {/* Breadcrumb */}
+            <nav className="flex items-center space-x-1 text-xs text-gray-500 mb-2">
+              <Link href="/" className="hover:text-gray-700 transition-colors">
+                Inicio
+              </Link>
+              <ChevronRight className="w-3 h-3" />
+              <Link
+                href={`/categorias/${categoryInfo.category.slug}`}
+                className="hover:text-gray-700 transition-colors"
+              >
+                {categoryInfo.category.name}
+              </Link>
+              {categoryInfo.subcategory && (
+                <>
+                  <ChevronRight className="w-3 h-3" />
+                  <span className="text-gray-700 font-medium text-xs">
+                    {categoryInfo.subcategory.name}
+                  </span>
+                </>
+              )}
+            </nav>
+
+            {/* Título */}
+            <h1 className="text-lg font-bold text-gray-900 leading-tight">
+              {categoryInfo.subcategory
+                ? `${categoryInfo.subcategory.name} para ${categoryInfo.category.name}`
+                : categoryInfo.category.name}
+            </h1>
+          </div>
+        )}
+
         {/* Collapse principal: CATEGORÍAS */}
         <div className="border-b pb-4">
           <button

@@ -5,7 +5,7 @@ import { LoginPayload } from "@/interfaces/auth";
 
 export function useAuth() {
   const dispatch = useAppDispatch();
-  const { user, loading, error } = useAppSelector((state) => state.auth);
+  const { user, loading, error, isAuthenticated, isAdmin } = useAppSelector((state) => state.auth);
 
   const handleLogin = useCallback(
     (payload: LoginPayload) => dispatch(login(payload)),
@@ -32,7 +32,8 @@ export function useAuth() {
     user,
     loading,
     error,
-    isAuthenticated: !!user,
+    isAuthenticated,
+    isAdmin,
     login: handleLogin,
     checkSession: handleCheckSession,
     logout: handleLogout,

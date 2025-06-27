@@ -4,6 +4,8 @@ import { useEffect, useRef, useCallback, useMemo } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import ProductCard from "@/components/molecules/ProductCard";
 import Sidebar from "./Sidebar";
+import MobileSidebar from "./MobileSidebar";
+import MobileCategoriesButton from "../atoms/MobileCategoriesButton";
 import SkeletonProductCard from "../molecules/SkeletonProductCard";
 import LoadingSpinner from "../atoms/LoadingSpinner";
 import { debounce } from "@/utils/debounce";
@@ -68,48 +70,56 @@ const ProductList = ({ categorySlug, subcategorySlug }: ProductListProps) => {
 
   if (loading && products.length === 0)
     return (
-      <div className="flex">
-        <Sidebar />
-        <div className="flex-1">
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-0 p-4">
-            {Array.from({ length: SKELETON_COUNT }).map((_, idx) => (
-              <SkeletonProductCard key={idx} />
-            ))}
+      <>
+        <MobileSidebar />
+        <div className="flex">
+          <Sidebar />
+          <div className="flex-1 p-4">
+            <MobileCategoriesButton />
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-0">
+              {Array.from({ length: SKELETON_COUNT }).map((_, idx) => (
+                <SkeletonProductCard key={idx} />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
 
   if (error) return <p className="text-center text-red-500">Error: {error}</p>;
 
   return (
-    <div className="flex">
-      <Sidebar />
-      <div className="flex-1">
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-0 p-4">
-          {products.map((product, idx) => {
-            if (idx === products.length - 1) {
-              return (
-                <div ref={lastProductRef} key={product.id}>
-                  <ProductCard {...product} />
-                </div>
-              );
-            }
-            return <ProductCard key={product.id} {...product} />;
-          })}
-        </div>
-        {loading && products.length > 0 && (
-          <div className="flex justify-center py-4 text-[#888888]">
-            <LoadingSpinner />
+    <>
+      <MobileSidebar />
+      <div className="flex">
+        <Sidebar />
+        <div className="flex-1 p-4">
+          <MobileCategoriesButton />
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-0">
+            {products.map((product, idx) => {
+              if (idx === products.length - 1) {
+                return (
+                  <div ref={lastProductRef} key={product.id}>
+                    <ProductCard {...product} />
+                  </div>
+                );
+              }
+              return <ProductCard key={product.id} {...product} />;
+            })}
           </div>
-        )}
-        {!nextCursor && !loading && products.length > 0 && (
-          <p className="text-center py-4 text-gray-400">
-            No hay más productos.
-          </p>
-        )}
+          {loading && products.length > 0 && (
+            <div className="flex justify-center py-4 text-[#888888]">
+              <LoadingSpinner />
+            </div>
+          )}
+          {!nextCursor && !loading && products.length > 0 && (
+            <p className="text-center py-4 text-gray-400">
+              No hay más productos.
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

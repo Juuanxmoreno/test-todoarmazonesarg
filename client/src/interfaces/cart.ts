@@ -8,10 +8,17 @@ interface Color {
 interface Product {
   _id: string;
   slug: string;
+  thumbnail: string;
+  primaryImage: string;
   category: string[];
   subcategory: string;
   productModel: string;
   sku: string;
+  size: string;
+  costUSD: number;
+  priceUSD: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Variante de producto (usado en GET /cart)
@@ -21,14 +28,14 @@ interface ProductVariant {
   color: Color;
   stock: number;
   images: string[];
-  priceUSD: number;
+  __v: number;
   createdAt: string;
   updatedAt: string;
 }
 
-// Ítem dentro del carrito (puede tener string o el objeto completo como variante)
+// Ítem dentro del carrito (productVariant siempre es el objeto completo en respuestas del backend)
 interface CartItem {
-  productVariant: string | ProductVariant;
+  productVariant: ProductVariant;
   quantity: number;
   subTotal: number;
 }

@@ -8,3 +8,9 @@ export interface LoginPayload {
 export interface AuthResponse {
   user: IUser;
 }
+
+export interface AdminCheckResponse {
+  user: IUser | null;
+  authenticated: boolean;
+  isAdmin: boolean;
+}

@@ -7,6 +7,7 @@ import BagIcon from "../atoms/Icon/BagIcon";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { useCart } from "@/hooks/useCart";
 import { useState } from "react";
+import LoadingSpinner from "../atoms/LoadingSpinner";
 
 const ProductCard = ({
   slug,
@@ -27,6 +28,12 @@ const ProductCard = ({
 
   // Estado para el color seleccionado (ninguno al inicio)
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  
+  // Estado local para manejar errores específicos de este producto
+  const [addError, setAddError] = useState<string | null>(null);
+  
+  // Estado local para manejar loading específico de este producto
+  const [isAdding, setIsAdding] = useState<boolean>(false);
 
   // Encontrar la variante seleccionada según el color
   const selectedVariant = selectedColor
@@ -39,21 +46,28 @@ const ProductCard = ({
   const handleAddToCart = async () => {
     if (!selectedVariant || selectedVariant.stock === 0) return;
 
+    // Limpiar error anterior
+    setAddError(null);
+    
+    // Activar loading específico para este producto
+    setIsAdding(true);
+
     const result = await addItem(selectedVariant.id, 1);
+    
+    // Desactivar loading específico para este producto
+    setIsAdding(false);
 
-    if (result.success) {
-      // Abrir drawer solo si fue exitoso
-      const drawerCheckbox = document.getElementById(
-        "cart-drawer"
-      ) as HTMLInputElement | null;
-
-      if (drawerCheckbox) {
-        drawerCheckbox.checked = true;
-      }
-    } else {
-      // Opcional: mostrar un toast o alerta
-      console.error("Error al agregar al carrito:", result.error);
+    if (!result.success) {
+      // Mostrar error específico de este producto
+      const errorMessage = typeof result.error === 'string' 
+        ? result.error 
+        : 'Error al agregar al carrito';
+      setAddError(errorMessage);
+      
+      // Limpiar error después de 5 segundos
+      setTimeout(() => setAddError(null), 5000);
     }
+    // La lógica para abrir el CartDrawer está ahora en useCart
   };
 
   return (
@@ -110,9 +124,18 @@ const ProductCard = ({
               <button
                 key={c.hex}
                 type="button"
-                className="flex items-center gap-1 focus:outline-none relative"
-                onClick={() => !isOutOfStock && setSelectedColor(c.hex)}
-                disabled={isOutOfStock}
+                className={`flex items-center gap-1 focus:outline-none relative ${
+                  isOutOfStock 
+                    ? "pointer-events-none cursor-not-allowed" 
+                    : "cursor-pointer"
+                }`}
+                onClick={() => {
+                  if (!isOutOfStock) {
+                    setSelectedColor(c.hex);
+                    // Limpiar error al seleccionar un nuevo color
+                    setAddError(null);
+                  }
+                }}
               >
                 <div
                   className="tooltip"
@@ -156,14 +179,32 @@ const ProductCard = ({
             }
           >
             <button
-              className="btn rounded-none shadow-none border-none bg-[#f2f2f2] text-[#222222] hover:bg-[#000000] hover:text-[#ffffff] transition-colors duration-300 ease-in-out"
-              onClick={handleAddToCart}
-              disabled={!selectedVariant || selectedVariant.stock === 0}
+              className={`btn rounded-none shadow-none border-none transition-colors duration-300 ease-in-out ${
+                selectedVariant && selectedVariant.stock > 0 && !isAdding
+                  ? "bg-[#f2f2f2] text-[#222222] hover:bg-[#000000] hover:text-[#ffffff] cursor-pointer"
+                  : "bg-[#e5e5e5] text-[#888888] cursor-not-allowed pointer-events-none"
+              }`}
+              onClick={
+                selectedVariant && selectedVariant.stock > 0 && !isAdding
+                  ? handleAddToCart
+                  : undefined
+              }
             >
-              <BagIcon />
+              {isAdding ? (
+                <LoadingSpinner size="sm" />
+              ) : (
+                <BagIcon />
+              )}
             </button>
           </div>
         </div>
+        
+        {/* Error específico para este producto */}
+        {addError && (
+          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-xs text-center">
+            {addError}
+          </div>
+        )}
       </div>
     </div>
   );

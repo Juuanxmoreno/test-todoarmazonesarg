@@ -1,10 +1,5 @@
 import { AxiosError } from 'axios';
 
-// ============================================================================
-// RESPONSE TYPES - Tipos para respuestas de la API
-// ============================================================================
-
-// Tipos exactos del backend para mantener consistencia
 export type ErrorDetails = {
   code?: string;
   fields?: Record<string, string[]>;

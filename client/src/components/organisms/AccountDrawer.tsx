@@ -3,6 +3,7 @@ import Link from "next/link";
 import AccountCircleIcon from "../atoms/Icon/AccountCircleIcon";
 import { useAuth } from "@/hooks/useAuth";
 import { authEvents } from "@/utils/authRequiredRequest";
+import { usePendingAction } from "@/hooks/usePendingAction";
 import { usePathname } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import LoadingSpinner from "../atoms/LoadingSpinner";
@@ -10,6 +11,7 @@ import LoadingSpinner from "../atoms/LoadingSpinner";
 const AccountDrawer: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"login" | "register">("login");
+  const [showPendingMessage, setShowPendingMessage] = useState(false);
   const { user, fetchCurrentUser, logout, login, register, loading, error } =
     useAuth();
 
@@ -20,6 +22,20 @@ const AccountDrawer: React.FC = () => {
   const [registerData, setRegisterData] = useState({ email: "", password: "" });
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+
+  // Hook para manejar acciones pendientes
+  const { hasPendingAction, clearPendingAction } = usePendingAction({
+    onPendingAction: () => {
+      // Se ejecuta cuando se detecta una acción pendiente
+      setShowPendingMessage(true);
+    },
+    onPendingActionExecuted: () => {
+      // Se ejecuta después de completar la acción pendiente
+      setShowPendingMessage(false);
+      // Cerrar el drawer automáticamente después de ejecutar la acción
+      setTimeout(() => setOpen(false), 500);
+    },
+  });
 
   useEffect(() => {
     fetchCurrentUser();
@@ -40,6 +56,16 @@ const AccountDrawer: React.FC = () => {
     setOpen(false);
   }, [pathname]);
 
+  // Cierra el Drawer cuando el usuario se autentica exitosamente
+  useEffect(() => {
+    if (user) {
+      // Si el usuario se autenticó, cerrar el drawer
+      setOpen(false);
+      // También resetear el mensaje de acción pendiente
+      setShowPendingMessage(false);
+    }
+  }, [user]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     await login(loginData);
@@ -58,6 +84,11 @@ const AccountDrawer: React.FC = () => {
   const handleTabChange = (newTab: "login" | "register") => {
     setTab(newTab);
     resetForms();
+  };
+
+  const handleCancelPendingAction = () => {
+    clearPendingAction();
+    setShowPendingMessage(false);
   };
 
   return (
@@ -110,6 +141,29 @@ const AccountDrawer: React.FC = () => {
             </div>
             <span className="text-lg text-[#000000]">MI CUENTA</span>
           </div>
+
+          {/* Mensaje de acción pendiente */}
+          {showPendingMessage && hasPendingAction && !user && (
+            <div className="mx-6 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-blue-800 font-medium text-sm">
+                    Acción pendiente
+                  </p>
+                  <p className="text-blue-600 text-xs mt-1">
+                    Inicia sesión para completar tu acción anterior
+                  </p>
+                </div>
+                <button
+                  onClick={handleCancelPendingAction}
+                  className="text-blue-400 hover:text-blue-600 text-xs"
+                  aria-label="Cancelar acción pendiente"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Si hay usuario, saludo y links */}
           {user ? (
@@ -185,30 +239,45 @@ const AccountDrawer: React.FC = () => {
                       type="email"
                       placeholder="Correo electrónico"
                       className={`input w-full border border-[#e1e1e1] rounded-none bg-[#FFFFFF] text-[#222222] px-3 py-2 ${
-                        loading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
+                        loading
+                          ? "opacity-50 cursor-not-allowed pointer-events-none"
+                          : ""
                       }`}
                       value={loginData.email}
-                      onChange={loading ? undefined : (e) =>
-                        setLoginData({ ...loginData, email: e.target.value })
+                      onChange={
+                        loading
+                          ? undefined
+                          : (e) =>
+                              setLoginData({
+                                ...loginData,
+                                email: e.target.value,
+                              })
                       }
                       required
                     />
                   </label>
                   <label className="flex flex-col gap-1">
                     <span className="text-sm text-[#777777]">Contraseña *</span>
-                    <label className={`input w-full border border-[#e1e1e1] rounded-none bg-[#FFFFFF] flex items-center px-3 py-2 gap-2 ${
-                      loading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
-                    }`}>
+                    <label
+                      className={`input w-full border border-[#e1e1e1] rounded-none bg-[#FFFFFF] flex items-center px-3 py-2 gap-2 ${
+                        loading
+                          ? "opacity-50 cursor-not-allowed pointer-events-none"
+                          : ""
+                      }`}
+                    >
                       <input
                         type={showLoginPassword ? "text" : "password"}
                         placeholder="Contraseña"
                         className="grow bg-transparent text-[#222222] outline-none"
                         value={loginData.password}
-                        onChange={loading ? undefined : (e) =>
-                          setLoginData({
-                            ...loginData,
-                            password: e.target.value,
-                          })
+                        onChange={
+                          loading
+                            ? undefined
+                            : (e) =>
+                                setLoginData({
+                                  ...loginData,
+                                  password: e.target.value,
+                                })
                         }
                         required
                       />
@@ -216,7 +285,11 @@ const AccountDrawer: React.FC = () => {
                         type="button"
                         tabIndex={-1}
                         className="text-gray-500 hover:text-gray-700"
-                        onClick={loading ? undefined : () => setShowLoginPassword((v) => !v)}
+                        onClick={
+                          loading
+                            ? undefined
+                            : () => setShowLoginPassword((v) => !v)
+                        }
                         aria-label={
                           showLoginPassword
                             ? "Ocultar contraseña"
@@ -266,33 +339,45 @@ const AccountDrawer: React.FC = () => {
                       type="email"
                       placeholder="Correo electrónico"
                       className={`input w-full border border-[#e1e1e1] rounded-none bg-[#FFFFFF] text-[#222222] px-3 py-2 ${
-                        loading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
+                        loading
+                          ? "opacity-50 cursor-not-allowed pointer-events-none"
+                          : ""
                       }`}
                       value={registerData.email}
-                      onChange={loading ? undefined : (e) =>
-                        setRegisterData({
-                          ...registerData,
-                          email: e.target.value,
-                        })
+                      onChange={
+                        loading
+                          ? undefined
+                          : (e) =>
+                              setRegisterData({
+                                ...registerData,
+                                email: e.target.value,
+                              })
                       }
                       required
                     />
                   </label>
                   <label className="flex flex-col gap-1">
                     <span className="text-sm text-[#777777]">Contraseña *</span>
-                    <label className={`input w-full border border-[#e1e1e1] rounded-none bg-[#FFFFFF] flex items-center px-3 py-2 gap-2 ${
-                      loading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
-                    }`}>
+                    <label
+                      className={`input w-full border border-[#e1e1e1] rounded-none bg-[#FFFFFF] flex items-center px-3 py-2 gap-2 ${
+                        loading
+                          ? "opacity-50 cursor-not-allowed pointer-events-none"
+                          : ""
+                      }`}
+                    >
                       <input
                         type={showRegisterPassword ? "text" : "password"}
                         placeholder="Contraseña"
                         className="grow bg-transparent text-[#222222] outline-none"
                         value={registerData.password}
-                        onChange={loading ? undefined : (e) =>
-                          setRegisterData({
-                            ...registerData,
-                            password: e.target.value,
-                          })
+                        onChange={
+                          loading
+                            ? undefined
+                            : (e) =>
+                                setRegisterData({
+                                  ...registerData,
+                                  password: e.target.value,
+                                })
                         }
                         required
                       />
@@ -300,7 +385,11 @@ const AccountDrawer: React.FC = () => {
                         type="button"
                         tabIndex={-1}
                         className="text-gray-500 hover:text-gray-700"
-                        onClick={loading ? undefined : () => setShowRegisterPassword((v) => !v)}
+                        onClick={
+                          loading
+                            ? undefined
+                            : () => setShowRegisterPassword((v) => !v)
+                        }
                         aria-label={
                           showRegisterPassword
                             ? "Ocultar contraseña"
