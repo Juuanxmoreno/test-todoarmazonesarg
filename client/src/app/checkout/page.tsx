@@ -16,7 +16,7 @@ import { Check, Package, ShoppingBag } from "lucide-react";
 import LoadingSpinner from "@/components/atoms/LoadingSpinner";
 
 const CheckoutPage = () => {
-  const { cart, loading, fetchCart } = useCart();
+  const { cart, loading, fetchCart, resetCart } = useCart();
   const { placeOrder, loading: orderLoading, error, resetError } = useOrders();
 
   const [shippingMethod, setShippingMethod] = useState(
@@ -78,6 +78,7 @@ const CheckoutPage = () => {
     };
     const result = await placeOrder(payload);
     if (createOrder.fulfilled.match(result)) {
+      resetCart();
       setSuccess(true);
     }
   };

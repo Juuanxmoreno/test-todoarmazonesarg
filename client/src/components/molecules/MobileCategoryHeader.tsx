@@ -42,8 +42,10 @@ const MobileCategoryHeader = ({
         </nav>
 
         {/* Título principal */}
-        <h1 className="text-xl font-bold text-gray-900">
-          {subcategoryName ? subcategoryName : categoryName}
+        <h1 className="text-lg font-bold text-gray-900 leading-tight">
+          {subcategoryName
+            ? `${subcategoryName} para ${categoryName}`
+            : categoryName}
         </h1>
       </div>
     </div>
