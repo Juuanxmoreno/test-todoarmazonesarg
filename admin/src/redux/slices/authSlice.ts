@@ -11,6 +11,7 @@ interface AuthState {
   error: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  sessionChecked: boolean; // Nuevo flag
 }
 
 const initialState: AuthState = {
@@ -19,6 +20,7 @@ const initialState: AuthState = {
   error: null,
   isAuthenticated: false,
   isAdmin: false,
+  sessionChecked: false, // Inicialmente no se ha chequeado
 };
 
 // Login thunk
@@ -51,13 +53,9 @@ export const checkSession = createAsyncThunk<
     const res = await axiosInstance.get<ApiResponse<AdminCheckResponse>>(
       "/auth/me-admin"
     );
-    
-    // La respuesta siempre será exitosa ahora
     if (res.data.status === "success" && res.data.data) {
       return res.data.data;
     }
-    
-    // Si por alguna razón no hay data, devolver estado no autenticado
     return {
       user: null,
       authenticated: false,
@@ -88,9 +86,7 @@ export const logoutAsync = createAsyncThunk<
 const authSlice = createSlice({
   name: "auth",
   initialState,
-  reducers: {
-    // Elimina el método logout aquí, ya que el logout real ahora es asíncrono
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       // Login
@@ -102,24 +98,28 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload;
         state.isAuthenticated = true;
-        state.isAdmin = true; // Si logra hacer login como admin, es admin
+        state.isAdmin = true;
+        state.sessionChecked = true; // Login exitoso, sesión chequeada
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Login failed";
         state.isAuthenticated = false;
         state.isAdmin = false;
+        state.sessionChecked = true; // Login intentado, sesión chequeada
       })
       // Check session
       .addCase(checkSession.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.sessionChecked = false; // Comienza chequeo
       })
       .addCase(checkSession.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
         state.isAuthenticated = action.payload.authenticated;
         state.isAdmin = action.payload.isAdmin;
+        state.sessionChecked = true; // Chequeo terminado
       })
       .addCase(checkSession.rejected, (state, action) => {
         state.loading = false;
@@ -127,6 +127,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.isAdmin = false;
         state.error = action.payload || "Error al verificar sesión";
+        state.sessionChecked = true; // Chequeo terminado aunque haya error
       })
       // Logout
       .addCase(logoutAsync.pending, (state) => {
@@ -138,6 +139,7 @@ const authSlice = createSlice({
         state.user = null;
         state.isAuthenticated = false;
         state.isAdmin = false;
+        state.sessionChecked = true; // Después de logout, sesión chequeada
       })
       .addCase(logoutAsync.rejected, (state, action) => {
         state.loading = false;
@@ -146,5 +148,4 @@ const authSlice = createSlice({
   },
 });
 
-// Exporta solo los thunks que no han sido exportados antes
 export default authSlice.reducer;

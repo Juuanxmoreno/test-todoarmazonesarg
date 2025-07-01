@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 const initialVariant = {
-  color: { name: "", hex: "" },
+  color: { name: "", hex: "#000000" },
   stock: 0,
 };
 

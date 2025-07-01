@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 
@@ -8,8 +8,13 @@ interface Props {
 }
 
 const SessionGuard: React.FC<Props> = ({ children }) => {
-  const { loading, error, isAuthenticated, isAdmin, checkSession } = useAuth();
+  const { loading, error, isAuthenticated, isAdmin, checkSession, sessionChecked } = useAuth();
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     checkSession();
@@ -17,15 +22,13 @@ const SessionGuard: React.FC<Props> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (!loading && !error) {
-      // Solo redirigir si definitivamente no está autenticado o no es admin
-      if (!isAuthenticated || !isAdmin) {
-        router.replace("/login");
-      }
+    // Solo redirigir si la sesión ya fue chequeada y no está autenticado o no es admin
+    if (isClient && sessionChecked && !loading && !error && (!isAuthenticated || !isAdmin)) {
+      router.replace("/login");
     }
-  }, [loading, error, isAuthenticated, isAdmin, router]);
+  }, [isClient, sessionChecked, loading, error, isAuthenticated, isAdmin, router]);
 
-  if (loading) {
+  if (!isClient || !sessionChecked) {
     return (
       <div className="w-full h-screen flex items-center justify-center text-lg font-semibold">
         Verificando permisos de administrador...
@@ -49,7 +52,7 @@ const SessionGuard: React.FC<Props> = ({ children }) => {
   }
 
   // Si no está autenticado o no es admin, no mostrar contenido (se redirigirá)
-  if (!isAuthenticated || !isAdmin) {
+  if (sessionChecked && (!isAuthenticated || !isAdmin)) {
     return null;
   }
 

@@ -5,7 +5,7 @@ import { LoginPayload } from "@/interfaces/auth";
 
 export function useAuth() {
   const dispatch = useAppDispatch();
-  const { user, loading, error, isAuthenticated, isAdmin } = useAppSelector((state) => state.auth);
+  const { user, loading, error, isAuthenticated, isAdmin, sessionChecked } = useAppSelector((state) => state.auth);
 
   const handleLogin = useCallback(
     (payload: LoginPayload) => dispatch(login(payload)),
@@ -34,6 +34,7 @@ export function useAuth() {
     error,
     isAuthenticated,
     isAdmin,
+    sessionChecked, // Nuevo flag expuesto
     login: handleLogin,
     checkSession: handleCheckSession,
     logout: handleLogout,

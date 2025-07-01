@@ -22,13 +22,15 @@ export default function EditProductPage({
 }) {
   // Desempaqueta params usando React.use()
   const { id } = React.use(params);
-  const { products, updateProduct, loading } = useProducts();
+  const { products, searchResults, updateProduct, loading } = useProducts();
   const router = useRouter();
   const modalRef = useRef<HTMLDialogElement>(null);
   const [success, setSuccess] = useState(false);
 
   // Busca el producto por id usando params.id
-  const product = products.find((p) => p.id === id);
+  const product =
+    products.find((p) => p.id === id) ||
+    searchResults.find((p) => p.id === id);
 
   useEffect(() => {
     if (!product && products.length > 0) {

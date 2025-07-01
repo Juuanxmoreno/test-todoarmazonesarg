@@ -7,10 +7,22 @@ import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/atoms/LoadingSpinner";
 
 const LoginPage = () => {
-  const { login, loading, error, user } = useAuth();
+  const { login, loading, error, user, isAuthenticated, isAdmin, sessionChecked, checkSession } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState<LoginPayload["email"]>("");
   const [password, setPassword] = useState<LoginPayload["password"]>("");
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    // Disparar checkSession si no está chequeada la sesión
+    if (isClient && !sessionChecked) {
+      checkSession();
+    }
+  }, [isClient, sessionChecked, checkSession]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,10 +30,27 @@ const LoginPage = () => {
   };
 
   useEffect(() => {
-    if (user) {
+    // Solo redirigir si la sesión ya fue chequeada y está autenticado y es admin
+    if (isClient && sessionChecked && isAuthenticated && isAdmin) {
       router.replace("/");
     }
-  }, [user, router]);
+  }, [isClient, sessionChecked, isAuthenticated, isAdmin, router]);
+
+  if (!isClient || !sessionChecked) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex justify-center items-center">
