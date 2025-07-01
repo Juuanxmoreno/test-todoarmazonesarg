@@ -2,6 +2,7 @@
 
 import ProductList from "@/components/organisms/ProductList";
 import MobileCategoryHeader from "@/components/molecules/MobileCategoryHeader";
+import PageTransition from "@/components/atoms/PageTransition";
 
 // Función para obtener información de categoría en el servidor
 function getCategoryInfo(categorySlug: string) {
@@ -54,12 +55,14 @@ export default async function CategoryPage({
   }
 
   return (
-    <main>
-      <MobileCategoryHeader
-        categoryName={categoryInfo.name}
-        categorySlug={categoryInfo.slug}
-      />
-      <ProductList categorySlug={categorySlug} />
-    </main>
+    <PageTransition>
+      <main>
+        <MobileCategoryHeader
+          categoryName={categoryInfo.name}
+          categorySlug={categoryInfo.slug}
+        />
+        <ProductList categorySlug={categorySlug} />
+      </main>
+    </PageTransition>
   );
 }

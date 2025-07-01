@@ -32,7 +32,17 @@ const CheckoutPage = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<AddressFormData>({
-    resolver: zodResolver(addressSchema),
+    resolver: async (data, context, options) => {
+      // Inyecta shippingMethod en los datos antes de validar
+      return zodResolver(addressSchema)(
+        {
+          ...data,
+          shippingMethod,
+        },
+        context,
+        options
+      );
+    },
   });
 
   useEffect(() => {

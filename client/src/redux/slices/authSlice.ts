@@ -57,7 +57,7 @@ export const login = createAsyncThunk<
 // 📝 Registro
 export const register = createAsyncThunk<
   IUser,
-  { email: string; password: string },
+  { email: string; password: string; confirmPassword: string },
   { rejectValue: string }
 >("auth/register", async (data, { rejectWithValue, dispatch, getState }) => {
   try {

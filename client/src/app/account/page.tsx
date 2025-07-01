@@ -13,9 +13,10 @@ const AccountPage = () => {
   const { loading, error } = useAppSelector((state) => state.auth);
 
   const [loginData, setLoginData] = useState({ email: "", password: "" });
-  const [registerData, setRegisterData] = useState({ email: "", password: "" });
+  const [registerData, setRegisterData] = useState({ email: "", password: "", confirmPassword: "" });
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +28,11 @@ const AccountPage = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRegisterError(null);
+    if (registerData.password !== registerData.confirmPassword) {
+      setRegisterError("Las contraseñas no coinciden");
+      return;
+    }
     const result = await dispatch(register(registerData));
     if (register.fulfilled.match(result)) {
       router.push("/"); // Redirige si registro es exitoso
@@ -201,6 +207,57 @@ const AccountPage = () => {
                 </button>
               </label>
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-[#777777]">
+                Confirmar contraseña *
+              </label>
+              <label
+                className={`input w-full border border-[#e1e1e1] rounded-none bg-[#FFFFFF] flex items-center px-3 py-2 gap-2 ${
+                  loading
+                    ? "opacity-50 cursor-not-allowed pointer-events-none"
+                    : ""
+                }`}
+              >
+                <input
+                  type={showRegisterPassword ? "text" : "password"}
+                  className="grow bg-transparent text-[#222222] outline-none"
+                  value={registerData.confirmPassword}
+                  onChange={
+                    loading
+                      ? undefined
+                      : (e) =>
+                          setRegisterData({
+                            ...registerData,
+                            confirmPassword: e.target.value,
+                          })
+                  }
+                  required
+                  placeholder="Confirmar contraseña"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="text-gray-500 hover:text-gray-700"
+                  onClick={
+                    loading
+                      ? undefined
+                      : () => setShowRegisterPassword((v) => !v)
+                  }
+                  aria-label={
+                    showRegisterPassword
+                      ? "Ocultar contraseña"
+                      : "Mostrar contraseña"
+                  }
+                >
+                  {showRegisterPassword ? (
+                    <EyeOff size={20} />
+                  ) : (
+                    <Eye size={20} />
+                  )}
+                </button>
+              </label>
+            </div>
+            {registerError && <p className="text-red-600 text-sm">{registerError}</p>}
             {error && <p className="text-red-600 text-sm">{error}</p>}
             <button
               type="submit"

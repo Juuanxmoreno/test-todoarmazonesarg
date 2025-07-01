@@ -22,7 +22,7 @@ export const useAuth = () => {
     loading,
     error,
     login: (data: { email: string; password: string }) => dispatch(login(data)),
-    register: (data: { email: string; password: string }) =>
+    register: (data: { email: string; password: string; confirmPassword: string }) =>
       dispatch(register(data)),
     logout: () => dispatch(logout()),
     fetchCurrentUser: fetchCurrentUserCallback,

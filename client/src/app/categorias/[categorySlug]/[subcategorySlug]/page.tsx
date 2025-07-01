@@ -2,6 +2,7 @@
 
 import ProductList from "@/components/organisms/ProductList";
 import MobileCategoryHeader from "@/components/molecules/MobileCategoryHeader";
+import PageTransition from "@/components/atoms/PageTransition";
 
 // Función para obtener información de categoría y subcategoría en el servidor
 function getCategoryAndSubcategoryInfo(
@@ -65,17 +66,19 @@ export default async function SubcategoryPage({
   }
 
   return (
-    <main>
-      <MobileCategoryHeader
-        categoryName={category.name}
-        categorySlug={category.slug}
-        subcategoryName={subcategory.name}
-        subcategorySlug={subcategory.slug}
-      />
-      <ProductList
-        categorySlug={categorySlug}
-        subcategorySlug={subcategorySlug}
-      />
-    </main>
+    <PageTransition>
+      <main>
+        <MobileCategoryHeader
+          categoryName={category.name}
+          categorySlug={category.slug}
+          subcategoryName={subcategory.name}
+          subcategorySlug={subcategory.slug}
+        />
+        <ProductList
+          categorySlug={categorySlug}
+          subcategorySlug={subcategorySlug}
+        />
+      </main>
+    </PageTransition>
   );
 }

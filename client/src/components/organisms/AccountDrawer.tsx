@@ -16,9 +16,10 @@ const AccountDrawer: React.FC = () => {
 
   // Form states
   const [loginData, setLoginData] = useState({ email: "", password: "" });
-  const [registerData, setRegisterData] = useState({ email: "", password: "" });
+  const [registerData, setRegisterData] = useState({ email: "", password: "", confirmPassword: "" });
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   // Escuchar evento global para abrir el Drawer
   useEventListener("auth:openAccountDrawer", () => {
@@ -42,12 +43,17 @@ const AccountDrawer: React.FC = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRegisterError(null);
+    if (registerData.password !== registerData.confirmPassword) {
+      setRegisterError("Las contraseñas no coinciden");
+      return;
+    }
     await register(registerData);
   };
 
   const resetForms = () => {
     setLoginData({ email: "", password: "" });
-    setRegisterData({ email: "", password: "" });
+    setRegisterData({ email: "", password: "", confirmPassword: "" });
   };
 
   const handleTabChange = (newTab: "login" | "register") => {
@@ -345,6 +351,57 @@ const AccountDrawer: React.FC = () => {
                       </button>
                     </label>
                   </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-sm text-[#777777]">Confirmar contraseña *</span>
+                    <label
+                      className={`input w-full border border-[#e1e1e1] rounded-none bg-[#FFFFFF] flex items-center px-3 py-2 gap-2 ${
+                        loading
+                          ? "opacity-50 cursor-not-allowed pointer-events-none"
+                          : ""
+                      }`}
+                    >
+                      <input
+                        type={showRegisterPassword ? "text" : "password"}
+                        placeholder="Confirmar contraseña"
+                        className="grow bg-transparent text-[#222222] outline-none"
+                        value={registerData.confirmPassword}
+                        onChange={
+                          loading
+                            ? undefined
+                            : (e) =>
+                                setRegisterData({
+                                  ...registerData,
+                                  confirmPassword: e.target.value,
+                                })
+                        }
+                        required
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        className="text-gray-500 hover:text-gray-700"
+                        onClick={
+                          loading
+                            ? undefined
+                            : () => setShowRegisterPassword((v) => !v)
+                        }
+                        aria-label={
+                          showRegisterPassword
+                            ? "Ocultar contraseña"
+                            : "Mostrar contraseña"
+                        }
+                      >
+                        {showRegisterPassword ? (
+                          <EyeOff size={20} />
+                        ) : (
+                          <Eye size={20} />
+                        )}
+                      </button>
+                    </label>
+                  </label>
+                  {registerError && (
+                    <div className="text-red-500 text-sm">{registerError}</div>
+                  )}
                   {error && <div className="text-red-500 text-sm">{error}</div>}
                   <button
                     type="submit"

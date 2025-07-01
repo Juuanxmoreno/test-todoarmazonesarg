@@ -10,6 +10,7 @@ import { cartEvents, searchEvents } from "@/utils/eventBus";
 import { useState } from "react";
 import LoadingSpinner from "../atoms/LoadingSpinner";
 import { addItemToCart } from "@/redux/slices/cartSlice";
+import { motion } from "framer-motion";
 
 const ProductCard = ({
   slug,
@@ -21,12 +22,8 @@ const ProductCard = ({
   priceUSD,
   variants,
 }: Product) => {
-  const {
-    addItem,
-    clearSpecificError,
-    getAddItemLoading,
-    getAddItemError,
-  } = useCart();
+  const { addItem, clearSpecificError, getAddItemLoading, getAddItemError } =
+    useCart();
 
   // Obtener colores únicos de todas las variantes
   const uniqueColors = Array.from(
@@ -75,8 +72,12 @@ const ProductCard = ({
   const addError = selectedVariant ? getAddItemError(selectedVariant.id) : null;
 
   return (
-    <div className="card card-border border-[#e1e1e1] hover:shadow-lg bg-white rounded-none">
-      <div className="card-body transition-transform duration-300 ease-in-out hover:scale-103">
+    <div className="card card-border border-[#e1e1e1] bg-white rounded-none">
+      <motion.div
+        className="card-body"
+        whileHover={{ scale: 1.03 }}
+        transition={{ type: "spring", stiffness: 180, damping: 18, mass: 0.7 }}
+      >
         <Link href={`/producto/${slug}`}>
           <Image
             src={process.env.NEXT_PUBLIC_API_URL + imageToShow}
@@ -205,7 +206,7 @@ const ProductCard = ({
             {addError}
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };
