@@ -21,6 +21,14 @@ export default function Home() {
   const [period, setPeriod] = useState<string>("day");
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Fetch gains cuando cambian los filtros
   useEffect(() => {
@@ -48,7 +56,9 @@ export default function Home() {
     },
     {
       label: "Desde",
-      value: gains?.fromDate ? new Date(gains.fromDate).toLocaleDateString() : "-",
+      value: gains?.fromDate
+        ? new Date(gains.fromDate).toLocaleDateString()
+        : "-",
     },
     {
       label: "Hasta",
@@ -63,11 +73,22 @@ export default function Home() {
     },
     tooltip: {
       trigger: "axis",
-      formatter: (params: Array<{ seriesName: string; data: number; color: string; axisValueLabel?: string }>) => {
-        let tooltip = params[0]?.axisValueLabel ? `<b>${params[0].axisValueLabel}</b><br/>` : "";
+      formatter: (
+        params: Array<{
+          seriesName: string;
+          data: number;
+          color: string;
+          axisValueLabel?: string;
+        }>
+      ) => {
+        let tooltip = params[0]?.axisValueLabel
+          ? `<b>${params[0].axisValueLabel}</b><br/>`
+          : "";
         params.forEach((item) => {
           if (item.seriesName === "Ganancia USD") {
-            tooltip += `<span style='color:${item.color}'>●</span> ${item.seriesName}: <b>${formatCurrency(item.data, "en-US", "USD")}</b><br/>`;
+            tooltip += `<span style='color:${item.color}'>●</span> ${
+              item.seriesName
+            }: <b>${formatCurrency(item.data, "en-US", "USD")}</b><br/>`;
           } else {
             tooltip += `<span style='color:${item.color}'>●</span> ${item.seriesName}: <b>${item.data}</b><br/>`;
           }
@@ -138,43 +159,106 @@ export default function Home() {
         Dashboard de Ganancias
       </h1>
       {/* Selector de periodo */}
-      <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 24, color: "#111" }}>
-        <label htmlFor="period" style={{ color: "#222" }}>Periodo:</label>
-        <select
-          id="period"
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          style={{ padding: 4, color: "#111", background: "#fff", border: "1px solid #ccc" }}
+      <div
+        style={{
+          display: "flex",
+          gap: 16,
+          alignItems: "center",
+          marginBottom: 24,
+          color: "#111",
+          flexWrap: isMobile ? "wrap" : undefined,
+          flexDirection: isMobile ? "column" : "row",
+        }}
+      >
+        <div
+          style={{
+            width: isMobile ? "100%" : undefined,
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+          }}
         >
-          {PERIOD_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value} style={{ color: "#111" }}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+          <label htmlFor="period" style={{ color: "#222" }}>
+            Periodo:
+          </label>
+          <select
+            id="period"
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            style={{
+              padding: 4,
+              color: "#111",
+              background: "#fff",
+              border: "1px solid #ccc",
+            }}
+          >
+            {PERIOD_OPTIONS.map((opt) => (
+              <option
+                key={opt.value}
+                value={opt.value}
+                style={{ color: "#111" }}
+              >
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
         {period === "custom" && (
-          <>
-            <label htmlFor="fromDate" style={{ color: "#222" }}>Desde:</label>
+          <div
+            style={{
+              width: isMobile ? "100%" : "auto",
+              display: "flex",
+              flexDirection: isMobile ? "column" : "row",
+              gap: 8,
+              alignItems: isMobile ? "flex-start" : "center",
+            }}
+          >
+            <label htmlFor="fromDate" style={{ color: "#222" }}>
+              Desde:
+            </label>
             <input
               id="fromDate"
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              style={{ padding: 4, color: "#111", background: "#fff", border: "1px solid #ccc" }}
+              style={{
+                padding: 4,
+                color: "#111",
+                background: "#fff",
+                border: "1px solid #ccc",
+                width: isMobile ? "100%" : undefined,
+              }}
             />
-            <label htmlFor="toDate" style={{ color: "#222" }}>Hasta:</label>
+            <label htmlFor="toDate" style={{ color: "#222" }}>
+              Hasta:
+            </label>
             <input
               id="toDate"
               type="date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              style={{ padding: 4, color: "#111", background: "#fff", border: "1px solid #ccc" }}
+              style={{
+                padding: 4,
+                color: "#111",
+                background: "#fff",
+                border: "1px solid #ccc",
+                width: isMobile ? "100%" : undefined,
+              }}
             />
-          </>
+          </div>
         )}
       </div>
       {/* Cards resumen */}
-      <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 16,
+          marginBottom: 24,
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         {summaryCards.map((card) => (
           <div
             key={card.label}
@@ -185,19 +269,33 @@ export default function Home() {
               minWidth: 120,
               textAlign: "center",
               boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              width: isMobile ? "100%" : undefined,
+              maxWidth: isMobile ? 300 : undefined,
             }}
           >
             <div style={{ fontSize: 14, color: "#222" }}>{card.label}</div>
-            <div style={{ fontSize: 20, fontWeight: 600, color: "#111" }}>{card.value}</div>
+            <div style={{ fontSize: 20, fontWeight: 600, color: "#111" }}>
+              {card.value}
+            </div>
           </div>
         ))}
       </div>
-      {gainsLoading && <p>Cargando gráfico...</p>}
-      {gainsError && <p style={{ color: "red" }}>{gainsError}</p>}
-      {!gainsLoading && !gainsError && gains && (
-        <ReactECharts option={option} style={{ height: 400, width: "100%" }} />
+      {/* Mostrar gráfico solo si no es móvil */}
+      {!isMobile && (
+        <>
+          {gainsLoading && <p>Cargando gráfico...</p>}
+          {gainsError && <p style={{ color: "red" }}>{gainsError}</p>}
+          {!gainsLoading && !gainsError && gains && (
+            <ReactECharts
+              option={option}
+              style={{ height: 400, width: "100%" }}
+            />
+          )}
+          {!gainsLoading && !gainsError && !gains && (
+            <p>No hay datos para mostrar.</p>
+          )}
+        </>
       )}
-      {!gainsLoading && !gainsError && !gains && <p>No hay datos para mostrar.</p>}
     </main>
   );
 }
