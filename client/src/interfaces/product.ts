@@ -19,6 +19,7 @@ export interface ProductVariant {
   id: string;
   color: ProductVariantColor;
   stock: number;
+  thumbnail: string;
   images: string[];
 }
 

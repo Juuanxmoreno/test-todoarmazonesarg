@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { addressSchema, AddressFormData } from "@/schemas/order.schema";
 import { useCart } from "@/hooks/useCart";
 import { useOrders } from "@/hooks/useOrders";
-import { createOrder } from "@/redux/slices/orderSlice";
+import { CartSyncError, createOrder } from "@/redux/slices/orderSlice";
 import type { CreateOrderPayload } from "@/interfaces/order";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { PaymentMethod, ShippingMethod } from "@/enums/order.enum";
@@ -26,6 +26,7 @@ const CheckoutPage = () => {
     PaymentMethod.CashOnDelivery
   );
   const [success, setSuccess] = useState(false);
+  const [syncError, setSyncError] = useState<CartSyncError | null>(null);
 
   const {
     register,
@@ -90,10 +91,22 @@ const CheckoutPage = () => {
     if (createOrder.fulfilled.match(result)) {
       resetCart();
       setSuccess(true);
+    } else if (createOrder.rejected.match(result)) {
+      // Si el error es de tipo CartSyncError
+      if (
+        result.payload &&
+        typeof result.payload === "object" &&
+        "changes" in result.payload &&
+        "cart" in result.payload
+      ) {
+        setSyncError(result.payload as CartSyncError);
+        fetchCart();
+      }
     }
   };
 
   const modalRef = useRef<HTMLDialogElement>(null);
+  const cartSyncModalRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     if (success && modalRef.current) {
@@ -101,9 +114,22 @@ const CheckoutPage = () => {
     }
   }, [success]);
 
+  useEffect(() => {
+    if (syncError && cartSyncModalRef.current) {
+      cartSyncModalRef.current.showModal();
+    }
+  }, [syncError]);
+
   const closeModalAndGo = () => {
     modalRef.current?.close();
   };
+
+  const closeSyncModal = () => {
+    setSyncError(null);
+    cartSyncModalRef.current?.close();
+    resetError();
+  };
+
   return (
     <div className="min-h-screen bg-[#FFFFFF] pt-4 pb-10 px-4">
       <nav aria-label="Checkout steps" className="flex justify-center my-8">
@@ -418,7 +444,7 @@ const CheckoutPage = () => {
                           src={
                             variant.images?.[0]
                               ? process.env.NEXT_PUBLIC_API_URL +
-                                variant.images[0]
+                                variant.thumbnail
                               : "/placeholder.png"
                           }
                           width={40}
@@ -485,7 +511,9 @@ const CheckoutPage = () => {
                 )}
               </span>
             </div>
-            {error && <div className="text-red-500 text-sm">{error}</div>}
+            {typeof error === "string" && error && (
+              <div className="text-red-500 text-sm">{error}</div>
+            )}
             {success && (
               <div className="text-green-600 font-semibold">
                 ¡Orden creada con éxito!
@@ -552,6 +580,53 @@ const CheckoutPage = () => {
             >
               Ir a Mis Pedidos
             </Link>
+          </div>
+        </div>
+      </dialog>
+
+      {/* Modal de sincronización de carrito */}
+      <dialog id="cart_sync_modal" className="modal" ref={cartSyncModalRef}>
+        <div className="modal-box bg-white text-[#111111] rounded-none">
+          <h3 className="font-bold text-lg">El carrito fue actualizado</h3>
+          <p className="py-4">{syncError?.message}</p>
+          <ul className="py-2">
+            {syncError?.changes.map((change, idx) => {
+              const variant = change.productVariant;
+              return (
+                <li key={idx} className="mb-2 flex items-center gap-3">
+                  {variant.images?.[0] && (
+                    <Image
+                      src={
+                        variant.images[0]
+                          ? process.env.NEXT_PUBLIC_API_URL + variant.thumbnail
+                          : "/placeholder.png"
+                      }
+                      width={40}
+                      height={40}
+                      alt={variant.product.productModel}
+                      className="w-10 h-10 object-cover rounded-none"
+                    />
+                  )}
+                  <div>
+                    <b>
+                      {variant.product.productModel} ({variant.product.sku})
+                    </b>
+                    :&nbsp;
+                    {change.removed
+                      ? "Eliminado por falta de stock"
+                      : `Cantidad ajustada de ${change.oldQuantity} a ${change.newQuantity} (stock disponible: ${change.stock})`}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="modal-action">
+            <button
+              className="btn rounded-none shadow-none border-none transition-colors duration-300 ease-in-out h-12 text-base px-6 w-full"
+              onClick={closeSyncModal}
+            >
+              Entendido
+            </button>
           </div>
         </div>
       </dialog>

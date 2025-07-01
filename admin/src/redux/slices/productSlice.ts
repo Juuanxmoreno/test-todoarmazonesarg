@@ -85,8 +85,8 @@ function buildCreateProductFormData(payload: CreateProductPayload): FormData {
   if (payload.files?.variantImages) {
     Object.entries(payload.files.variantImages).forEach(([colorKey, files]) => {
       files.forEach((file) => {
-        // El backend espera: variantImages-COLOR o similar, ajusta si es necesario
-        formData.append(`variantImages-${colorKey}`, file);
+        // El backend espera: images_<colorKey>
+        formData.append(`images_${colorKey.replace(/^images_/, "")}`, file);
       });
     });
   }
@@ -104,7 +104,7 @@ function buildUpdateProductFormData(payload: UpdateProductPayload): FormData {
   if (payload.files?.variantImages) {
     Object.entries(payload.files.variantImages).forEach(([colorKey, files]) => {
       files.forEach((file) => {
-        formData.append(`variantImages-${colorKey}`, file);
+        formData.append(`images_${colorKey.replace(/^images_/, "")}`, file);
       });
     });
   }

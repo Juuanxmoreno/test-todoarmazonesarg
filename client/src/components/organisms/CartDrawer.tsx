@@ -185,7 +185,7 @@ const CartDrawer: React.FC = () => {
                             <Image
                               src={
                                 process.env.NEXT_PUBLIC_API_URL +
-                                variant.images[0]
+                                variant.thumbnail
                               }
                               alt={variant.product.productModel}
                               width={48}

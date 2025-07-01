@@ -72,7 +72,10 @@ const OrdersPage = () => {
   }, [localStatusFilter]);
 
   if (loading && orders.length === 0) return <p>Cargando órdenes...</p>;
-  if (error) return <p>Error: {error}</p>;
+  if (error) {
+    const errorMsg = typeof error === "string" ? error : error.message;
+    return <p>Error: {errorMsg}</p>;
+  }
 
   return (
     <div className="px-4 py-6">

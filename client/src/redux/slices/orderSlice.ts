@@ -11,11 +11,50 @@ import { getErrorMessage, ApiResponse } from "@/types/api";
 import { OrderStatus } from "@/enums/order.enum";
 import { IUser } from "@/interfaces/user";
 
+// Tipos para error de sincronización de carrito
+export interface CartSyncChange {
+  productVariant: {
+    _id: string;
+    product: {
+      _id: string;
+      slug: string;
+      thumbnail: string;
+      primaryImage: string;
+      category: string[];
+      subcategory: string;
+      productModel: string;
+      sku: string;
+      size: string;
+      costUSD: number;
+      priceUSD: number;
+      createdAt: string;
+      updatedAt: string;
+    };
+    color: { name: string; hex: string };
+    stock: number;
+    thumbnail: string;
+    images: string[];
+    __v: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+  oldQuantity: number;
+  newQuantity: number;
+  removed: boolean;
+  stock: number;
+}
+
+export interface CartSyncError {
+  message: string;
+  changes: CartSyncChange[];
+  cart: import("@/interfaces/cart").Cart;
+}
+
 // Thunk para crear una orden
 export const createOrder = createAsyncThunk<
   Order,
   CreateOrderPayload,
-  { rejectValue: string }
+  { rejectValue: string | CartSyncError }
 >("orders/createOrder", async (payload, thunkAPI) => {
   try {
     const res = await axiosInstance.post<ApiResponse<Order>>(
@@ -28,6 +67,28 @@ export const createOrder = createAsyncThunk<
       throw new Error(res.data.message || "Error al crear la orden.");
     }
   } catch (error: unknown) {
+    // Manejo especial para error de sincronización de carrito
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "response" in error &&
+      typeof (error as { response?: unknown }).response === "object" &&
+      (error as { response?: { data?: unknown } }).response?.data &&
+      typeof (error as { response: { data: unknown } }).response.data === "object"
+    ) {
+      const data = (error as { response: { data: unknown } }).response.data as Record<string, unknown>;
+      if (
+        Array.isArray(data.changes) &&
+        typeof data.cart === "object" && data.cart !== null &&
+        typeof data.message === "string"
+      ) {
+        return thunkAPI.rejectWithValue({
+          message: data.message,
+          changes: data.changes as CartSyncChange[],
+          cart: data.cart as import("@/interfaces/cart").Cart,
+        });
+      }
+    }
     return thunkAPI.rejectWithValue(getErrorMessage(error));
   }
 });
@@ -65,7 +126,7 @@ interface OrdersState {
   orders: Order[];
   nextCursor: string | null;
   loading: boolean;
-  error: string | null;
+  error: string | null | CartSyncError;
   statusFilter?: OrderStatus;
 }
 

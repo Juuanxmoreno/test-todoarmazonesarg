@@ -27,6 +27,7 @@ interface ProductVariant {
   product: Product;
   color: Color;
   stock: number;
+  thumbnail: string;
   images: string[];
   __v: number;
   createdAt: string;

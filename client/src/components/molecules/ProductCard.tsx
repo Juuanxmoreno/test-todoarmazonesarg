@@ -39,7 +39,7 @@ const ProductCard = ({
     : null;
 
   // Imagen a mostrar: thumbnail si no hay variante seleccionada, si no la de la variante
-  const imageToShow = selectedVariant ? selectedVariant.images[0] : thumbnail;
+  const imageToShow = selectedVariant ? selectedVariant.thumbnail : thumbnail;
 
   const handleAddToCart = async () => {
     if (!selectedVariant || selectedVariant.stock === 0) return;
