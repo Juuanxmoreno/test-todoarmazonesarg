@@ -5,6 +5,7 @@ import {
   register,
   fetchCurrentUser,
   resetAuthError,
+  updateUser,
 } from "@/redux/slices/authSlice";
 import { useCallback } from "react";
 
@@ -27,5 +28,7 @@ export const useAuth = () => {
     logout: () => dispatch(logout()),
     fetchCurrentUser: fetchCurrentUserCallback,
     resetAuthError: () => dispatch(resetAuthError()),
+    updateUser: (data: { email: string; displayName: string; firstName?: string; lastName?: string }) =>
+      dispatch(updateUser(data)),
   };
 };

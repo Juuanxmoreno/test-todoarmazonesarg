@@ -100,7 +100,7 @@ export default function Sidebar() {
               )
             )}
             <button
-              className="w-full text-left flex items-center gap-3 text-gray-700 hover:text-black p-2 rounded-md hover:bg-gray-100 transition-colors"
+              className="w-full text-left flex items-center gap-3 text-gray-700 hover:text-black p-2 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
               onClick={handleLogout}
             >
               <LogOut />

@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { addressSchema, AddressFormData } from "@/schemas/order.schema";
 import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
 import { useOrders } from "@/hooks/useOrders";
 import { CartSyncError, createOrder } from "@/redux/slices/orderSlice";
 import type { CreateOrderPayload } from "@/interfaces/order";
@@ -17,6 +18,7 @@ import LoadingSpinner from "@/components/atoms/LoadingSpinner";
 
 const CheckoutPage = () => {
   const { cart, loading, fetchCart, resetCart } = useCart();
+  const { user } = useAuth();
   const { placeOrder, loading: orderLoading, error, resetError } = useOrders();
 
   const [shippingMethod, setShippingMethod] = useState(
@@ -31,8 +33,14 @@ const CheckoutPage = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<AddressFormData>({
+    defaultValues: {
+      email: user?.email || "",
+      firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
+    },
     resolver: async (data, context, options) => {
       // Inyecta shippingMethod en los datos antes de validar
       return zodResolver(addressSchema)(
@@ -45,6 +53,15 @@ const CheckoutPage = () => {
       );
     },
   });
+
+  // Si el usuario cambia (ej: login), actualiza los campos del form
+  useEffect(() => {
+    if (user) {
+      if (user.email) setValue("email", user.email);
+      if (user.firstName) setValue("firstName", user.firstName);
+      if (user.lastName) setValue("lastName", user.lastName);
+    }
+  }, [user, setValue]);
 
   useEffect(() => {
     fetchCart();

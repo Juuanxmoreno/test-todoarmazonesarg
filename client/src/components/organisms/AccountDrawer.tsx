@@ -116,7 +116,11 @@ const AccountDrawer: React.FC = () => {
           {user ? (
             <>
               <div className="px-6 pb-2 text-lg font-semibold text-black text-center">
-                ¡Hola {user.displayName}!
+                ¡Hola {user.firstName && user.lastName
+                  ? `${user.firstName} ${user.lastName}`
+                  : user.lastName
+                  ? user.displayName
+                  : user.displayName}!
               </div>
               <nav className="flex flex-col gap-4 px-6 py-8">
                 <Link
@@ -132,8 +136,12 @@ const AccountDrawer: React.FC = () => {
                   Mis Pedidos
                 </Link>
                 <Link
-                  href="/direccion"
-                  className="text-black underline-animate inline-block self-start"
+                  href="/direcciones"
+                  className="text-black underline-animate inline-block self-start cursor-not-allowed"
+                  tabIndex={-1}
+                  aria-disabled="true"
+                  onClick={e => { e.preventDefault(); }}
+                  style={{ pointerEvents: "auto" }}
                 >
                   Direcciones
                 </Link>

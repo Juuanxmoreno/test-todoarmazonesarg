@@ -124,7 +124,29 @@ export const logout = createAsyncThunk<void, void, { rejectValue: string }>(
   }
 );
 
-// 🧩 Slice de autenticación
+// 📝 Actualizar perfil
+const updateUser = createAsyncThunk<
+  IUser,
+  { email: string; displayName: string; firstName?: string; lastName?: string },
+  { rejectValue: string }
+>(
+  "auth/updateUser",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.patch<ApiResponse<IUser>>(
+        "/users/me",
+        data
+      );
+      if (!response.data.data) {
+        return rejectWithValue("Respuesta inválida del servidor");
+      }
+      return response.data.data;
+    } catch (error: unknown) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -181,6 +203,20 @@ const authSlice = createSlice({
         state.error = action.payload || "Error al verificar autenticación";
       })
 
+      // Actualizar perfil
+      .addCase(updateUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateUser.fulfilled, (state, action: PayloadAction<IUser>) => {
+        state.loading = false;
+        state.user = action.payload;
+      })
+      .addCase(updateUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Error al actualizar perfil";
+      })
+
       // Logout
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
@@ -189,5 +225,5 @@ const authSlice = createSlice({
 });
 
 export const { resetAuthError } = authSlice.actions;
-
+export { updateUser };
 export default authSlice.reducer;
