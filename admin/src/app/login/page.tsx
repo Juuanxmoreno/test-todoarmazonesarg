@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/atoms/LoadingSpinner";
 
 const LoginPage = () => {
-  const { login, loading, error, user, isAuthenticated, isAdmin, sessionChecked, checkSession } = useAuth();
+  const { login, loading, error, isAuthenticated, isAdmin, sessionChecked, checkSession } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState<LoginPayload["email"]>("");
   const [password, setPassword] = useState<LoginPayload["password"]>("");
