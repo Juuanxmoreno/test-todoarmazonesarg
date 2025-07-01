@@ -10,6 +10,7 @@ import {
   Plus,
   ChevronRight,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const categories = [
   {
@@ -131,78 +132,96 @@ const Sidebar = () => {
             )}
           </button>
 
-          {isMainOpen && (
-            <div className="mt-4 space-y-2">
-              {categories.map((category) => {
-                const isOpen = openCategories.includes(category.name);
-                const segments = pathname.split("/").filter(Boolean);
-                const currentCategory = segments[1]; // asumiendo /categorias/[categoria]
-                const isActive = category.slug === currentCategory;
+          <AnimatePresence initial={false}>
+            {isMainOpen && (
+              <motion.div
+                key="main-categories"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="overflow-hidden mt-4 space-y-2"
+              >
+                {categories.map((category) => {
+                  const isOpen = openCategories.includes(category.name);
+                  const segments = pathname.split("/").filter(Boolean);
+                  const currentCategory = segments[1]; // asumiendo /categorias/[categoria]
+                  const isActive = category.slug === currentCategory;
 
-                return (
-                  <div key={category.slug}>
-                    <div className="flex items-center justify-between">
-                      <Link
-                        href={`/categorias/${category.slug}`}
-                        className={`text-sm font-medium text-[#888888] category underline-animate underline-animate-gray ${
-                          isActive || isOpen ? "underline-animate-active" : ""
-                        }`}
-                      >
-                        {category.name}
-                      </Link>
-                      <button
-                        onClick={() =>
-                          setOpenCategories((prev) =>
-                            prev.includes(category.name)
-                              ? prev.filter((name) => name !== category.name)
-                              : [...prev, category.name]
-                          )
-                        }
-                        className="ml-2 flex items-center"
-                        aria-label={
-                          isOpen
-                            ? "Cerrar subcategorías"
-                            : "Abrir subcategorías"
-                        }
-                      >
-                        {isOpen ? (
-                          <ChevronUp className="w-4 h-4 text-[#888888]" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 text-[#888888]" />
+                  return (
+                    <div key={category.slug}>
+                      <div className="flex items-center justify-between">
+                        <Link
+                          href={`/categorias/${category.slug}`}
+                          className={`text-sm font-medium text-[#888888] category underline-animate underline-animate-gray ${
+                            isActive || isOpen ? "underline-animate-active" : ""
+                          }`}
+                        >
+                          {category.name}
+                        </Link>
+                        <button
+                          onClick={() =>
+                            setOpenCategories((prev) =>
+                              prev.includes(category.name)
+                                ? prev.filter((name) => name !== category.name)
+                                : [...prev, category.name]
+                            )
+                          }
+                          className="ml-2 flex items-center"
+                          aria-label={
+                            isOpen
+                              ? "Cerrar subcategorías"
+                              : "Abrir subcategorías"
+                          }
+                        >
+                          {isOpen ? (
+                            <ChevronUp className="w-4 h-4 text-[#888888]" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-[#888888]" />
+                          )}
+                        </button>
+                      </div>
+
+                      <AnimatePresence initial={false}>
+                        {isOpen && (
+                          <motion.ul
+                            key={`subcat-${category.slug}`}
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2, ease: "easeInOut" }}
+                            className="ml-4 mt-2 space-y-1 text-sm text-[#888888] overflow-hidden"
+                          >
+                            {category.subcategories.map((sub) => {
+                              const segments = pathname.split("/").filter(Boolean);
+                              const currentCategory = segments[1]; // /categorias/[categoria]/[subcategoria]
+                              const currentSubcategory = segments[2];
+                              const isSubActive =
+                                category.slug === currentCategory &&
+                                sub.slug === currentSubcategory;
+
+                              return (
+                                <li key={sub.slug}>
+                                  <Link
+                                    href={`/categorias/${category.slug}/${sub.slug}`}
+                                    className={`underline-animate underline-animate-gray pb-1 ${
+                                      isSubActive ? "text-[#222222]" : ""
+                                    }`}
+                                  >
+                                    {sub.name}
+                                  </Link>
+                                </li>
+                              );
+                            })}
+                          </motion.ul>
                         )}
-                      </button>
+                      </AnimatePresence>
                     </div>
-
-                    {isOpen && (
-                      <ul className="ml-4 mt-2 space-y-1 text-sm text-[#888888]">
-                        {category.subcategories.map((sub) => {
-                          const segments = pathname.split("/").filter(Boolean);
-                          const currentCategory = segments[1]; // /categorias/[categoria]/[subcategoria]
-                          const currentSubcategory = segments[2];
-                          const isSubActive =
-                            category.slug === currentCategory &&
-                            sub.slug === currentSubcategory;
-
-                          return (
-                            <li key={sub.slug}>
-                              <Link
-                                href={`/categorias/${category.slug}/${sub.slug}`}
-                                className={`underline-animate underline-animate-gray pb-1 ${
-                                  isSubActive ? "text-[#222222]" : ""
-                                }`}
-                              >
-                                {sub.name}
-                              </Link>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </aside>

@@ -101,9 +101,9 @@ const OrdersPage = () => {
 
   return (
     <div className="px-4 py-6">
-      <h2 className="text-2xl font-bold text-[#111111] mb-4">
+      <h1 className="text-[#111111] font-bold text-2xl mb-4">
         Órdenes de clientes
-      </h2>
+      </h1>
       {renderError}
       {/* Filtro por estado */}
       <fieldset className="fieldset mb-4">

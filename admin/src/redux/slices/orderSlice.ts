@@ -4,11 +4,22 @@ import { OrdersResponse, Order } from "@/interfaces/order";
 import { ApiResponse, getErrorMessage } from "@/types/api";
 import { OrderStatus } from "@/enums/order.enum";
 
+export interface OrderGainBreakdown {
+  label: string;
+  year?: number;
+  month?: number;
+  day?: number;
+  hour?: number;
+  totalGainUSD: number;
+  orderCount: number;
+}
+
 interface OrderGains {
   totalGainUSD: number;
   orderCount: number;
   fromDate: string;
   toDate: string;
+  breakdown: OrderGainBreakdown[];
 }
 
 interface OrderState {

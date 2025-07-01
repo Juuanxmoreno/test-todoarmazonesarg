@@ -86,9 +86,9 @@ const ProductsPage = () => {
 
   return (
     <div className="px-4 py-6">
-      <h2 className="text-2xl font-bold text-[#111111] mb-4">
+      <h1 className="text-[#111111] font-bold text-2xl mb-4">
         Lista de productos
-      </h2>
+      </h1>
       <div className="flex justify-between items-center mb-4 gap-2">
         <form onSubmit={handleSearch} className="flex gap-2 w-full max-w-md">
           <input
